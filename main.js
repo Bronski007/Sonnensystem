@@ -7,9 +7,12 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement); // adds the canvas element the renderer uses to html body
 
+const textureLoader = new THREE.TextureLoader();
+const textureSun = textureLoader.load("public/sun.jpg")
+
 // sun
 const geometrySun = new THREE.SphereGeometry(1, 32, 16); // radius, number of horizontal segments, number of vertical segments
-const materialSun = new THREE.MeshBasicMaterial({color: 0xffff00});
+const materialSun = new THREE.MeshBasicMaterial({map: textureSun});
 const sun = new THREE.Mesh(geometrySun, materialSun);
 scene.add(sun); // adds sun to the coordinates (0, 0, 0)
 
@@ -17,9 +20,7 @@ camera.position.z = 5; // moves camera by +5 on z axis to (0, 0, 5)
 
 // rendering the scene
 function animate() {
-    // rotating the sun
-    sun.rotation.x += 0.01;
-    sun.rotation.y += 0.01;
+    sun.rotation.y += 0.01; // rotating the sun
 
     renderer.render(scene, camera);
 }
