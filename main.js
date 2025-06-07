@@ -8,8 +8,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement); // adds the canvas element the renderer uses to html body
 
 const textureLoader = new THREE.TextureLoader();
-const textureSun = textureLoader.load('public/Textures/sun.jpg');
-const textureEarth = textureLoader.load('public/Textures/earth.png')
+const textureSun = textureLoader.load('public/textures/sun.jpg');
+const textureEarth = textureLoader.load('public/textures/earth_day.jpg')
 
 // sun
 const geometrySun = new THREE.SphereGeometry(1, 32, 16); // radius, number of horizontal segments, number of vertical segments
@@ -18,6 +18,7 @@ const sun = new THREE.Mesh(geometrySun, materialSun);
 sun.position.set(-1.5, 0, -1);
 scene.add(sun);
 
+// earth
 const geometryEarth = new THREE.SphereGeometry(1, 32, 16); // radius, number of horizontal segments, number of vertical segments
 const materialEarth = new THREE.MeshBasicMaterial({map: textureEarth});
 const earth = new THREE.Mesh(geometryEarth, materialEarth);
