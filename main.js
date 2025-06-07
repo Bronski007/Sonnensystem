@@ -1,20 +1,24 @@
 import { initScene } from './core/initScene.js';
-import { planetBuilder } from './planets/planetBuilder.js'
+import { planetBuilder } from './planets/planetBuilder.js';
 
-const { scene, camera, renderer } = initScene();
-const { sun, earth } = planetBuilder();
+async function main() {
+  const { scene, camera, renderer } = initScene();
 
-scene.add(sun);
-scene.add(earth);
+  const { sunMesh, earthMesh } = await planetBuilder();
 
-camera.position.z = 5;
+  scene.add(sunMesh);
+  scene.add(earthMesh);
 
-function animate() {
-  sun.rotation.y += 0.01;
-  earth.rotation.y += 0.02;
+  function animate() {
+    sunMesh.rotation.y += 0.01;
+    earthMesh.rotation.y += 0.02;
+    renderer.render(scene, camera);
+  }
 
-  renderer.render(scene, camera);
+  renderer.setAnimationLoop(animate);
 }
-renderer.setAnimationLoop(animate);
+
+main();
+
 
 // verknüft alle module (main - setup)

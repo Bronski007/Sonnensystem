@@ -1,26 +1,37 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import { Planet } from './planet.js'
 
-export function planetBuilder(){
+//Api communication - fetches the radius of a given planet their distance to the sun etc.
+async function fetchPlanetData(planet){
+    try {
+        const response = await fetch("https://api.le-systeme-solaire.net/rest/bodies/"+planet);
+        if (!response.ok) {
+            throw new Error("could not fetch resource");
+        }
+        const data = await response.json();
+        console.log(data.equaRadius)
+        return data.equaRadius;
+    } catch (error) {
+        console.error(error);
+        return 1;
+    }
+}
+
+//creates the planet objects
+export async function planetBuilder(){
     const textureLoader = new THREE.TextureLoader();
     const textureSun = textureLoader.load('public/textures/sun.jpg');
     const textureEarth = textureLoader.load('public/textures/earth_day.jpg');
 
+    const sunRadius = await fetchPlanetData("sun");
+    const earthRadius = await fetchPlanetData("earth");
 
     //Sun
-    const geometrySun = new THREE.SphereGeometry(1, 32, 16);
-    const materialSun = new THREE.MeshBasicMaterial({ map: textureSun });
-    const sun = new THREE.Mesh(geometrySun, materialSun);
-    sun.position.set(-1.5, 0, -1);
-
+    const sun = new Planet(sunRadius*0.000001, new THREE.Vector3(-1.5, 0, 0), textureSun); //Sun is scaled down  by to .00
+    const sunMesh = sun.createPlanet();
     //Earth
-    const geometryEarth = new THREE.SphereGeometry(1, 32, 16);
-    const materialEarth = new THREE.MeshBasicMaterial({ map: textureEarth });
-    const earth = new THREE.Mesh(geometryEarth, materialEarth);
-    earth.position.set(1.5, 0, 1);
+    const earth = new Planet(earthRadius * 0.0001, new THREE.Vector3(1.5, 0, 0), textureEarth);
+    const earthMesh = earth.createPlanet();
 
-    return { sun, earth}
+    return { sunMesh, earthMesh}
 }
-
-// Dieses Modul enthält die Logik zur Erstellung der Planeten 
-// (villeicht eine extra Planeten Klasse von der für jeden Planet ein Objekt mit den bestimmten feldern in dieser .js erstellt wird)
-// das heißt: 1. Planet: allgemeine Planet-definition,  2. planetBuilder: erstellt jeden planeten mit seinen konkreten feldern und Eigenschaften
