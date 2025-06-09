@@ -1,17 +1,30 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 import { initScene } from './core/initScene.js';
 import { planetBuilder } from './planets/planetBuilder.js';
+import { initPointerLockControls } from './controls/pointerLockControlsManager.js';
+import { createMovementControls } from './controls/movementManager.js';
 
 async function main() {
   const { scene, camera, renderer } = initScene();
+
+  const controls = initPointerLockControls(camera, renderer);
+  scene.add(controls.getObject());
+  const movementControls = createMovementControls();
+  const clock = new THREE.Clock();
 
   const { sunMesh, earthMesh } = await planetBuilder();
 
   scene.add(sunMesh);
   scene.add(earthMesh);
 
+
   function animate() {
+    const delta = clock.getDelta();
+    movementControls.update(controls, delta);
+
     sunMesh.rotation.y += 0.01;
     earthMesh.rotation.y += 0.02;
+
     renderer.render(scene, camera);
   }
 
@@ -19,6 +32,5 @@ async function main() {
 }
 
 main();
-
 
 // verknüft alle module (main - setup)
