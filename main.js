@@ -12,10 +12,19 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
-  const { sunMesh, earthMesh } = await planetBuilder();
+  const {sunMesh, earthMesh, moonMesh, plutoMesh, venusMesh, jupiterMesh, neptuneMesh, saturnMesh, mercuryMesh, uranusMesh, marsMesh} = await planetBuilder();
 
   scene.add(sunMesh);
   scene.add(earthMesh);
+  scene.add(moonMesh);
+  scene.add(plutoMesh);
+  scene.add(venusMesh);
+  scene.add(jupiterMesh);
+  scene.add(neptuneMesh);
+  scene.add(saturnMesh);
+  scene.add(mercuryMesh);
+  scene.add(uranusMesh);
+  scene.add(marsMesh);
 
 
   function animate() {
@@ -23,7 +32,16 @@ async function main() {
     movementControls.update(controls, delta);
 
     sunMesh.rotation.y += 0.01;
-    earthMesh.rotation.y += 0.02;
+    earthMesh.rotation.y += 0.01;
+    moonMesh.rotation.y += 0.01;
+    plutoMesh.rotation.y += 0.01;
+    venusMesh.rotation.y += 0.01;
+    jupiterMesh.rotation.y += 0.01;
+    neptuneMesh.rotation.y += 0.01;
+    saturnMesh.rotation.y += 0.01;
+    mercuryMesh.rotation.y += 0.01;
+    uranusMesh.rotation.y += 0.01;
+    marsMesh.rotation.y += 0.01;
 
     renderer.render(scene, camera);
   }
