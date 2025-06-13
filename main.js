@@ -12,7 +12,7 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
-  const {sunMesh, earthMesh, moonMesh, plutoMesh, venusMesh, jupiterMesh, neptuneMesh, saturnMesh, mercuryMesh, uranusMesh, marsMesh} = await planetBuilder();
+  const {sunMesh, earthMesh, moonMesh, plutoMesh, venusMesh, jupiterMesh, neptuneMesh, saturnMesh, mercuryMesh, uranusMesh, marsMesh} = await planetBuilder(0.0001, 0.0000001);
 
   scene.add(sunMesh);
   scene.add(earthMesh);
