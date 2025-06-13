@@ -3,7 +3,7 @@ import { Planet } from './planet.js'
 
 //Api communication - fetches the radius of a given planet their distance to the sun etc.
 //Source: Bro Code - "How to FETCH data from an API using JavaScript" link: https://www.youtube.com/watch?v=37vxWr0WgQk
-async function fetchPlanetData(planet, info){
+async function fetchPlanetData(planet){
     try {
         const response = await fetch("https://api.le-systeme-solaire.net/rest/bodies/"+planet);
         if (!response.ok) {
@@ -31,6 +31,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const { radius: sunRadius, distanceToSun: sunDistance } = await fetchPlanetData("sun");
     const sun = new Planet(sunRadius* sizeMultplier, new THREE.Vector3(-100, 0, 0), textureSun); //Sun is scaled down  by to .00
     const sunMesh = sun.createPlanet();
+    
     //Earth
     const textureEarth = textureLoader.load('public/textures/earth_day.jpg');
     const { radius: earthRadius, distanceToSun: earthDistance } = await fetchPlanetData("earth");
