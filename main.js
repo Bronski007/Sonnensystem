@@ -12,36 +12,39 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
-  const {sunMesh, earthMesh, moonMesh, plutoMesh, venusMesh, jupiterMesh, neptuneMesh, saturnMesh, mercuryMesh, uranusMesh, marsMesh} = await planetBuilder(0.0001, 0.0000001);
+  const {sunMesh, orbits, meshes} = await planetBuilder(0.00001, 0.0000001);
 
   scene.add(sunMesh);
-  scene.add(earthMesh);
-  scene.add(moonMesh);
-  scene.add(plutoMesh);
-  scene.add(venusMesh);
-  scene.add(jupiterMesh);
-  scene.add(neptuneMesh);
-  scene.add(saturnMesh);
-  scene.add(mercuryMesh);
-  scene.add(uranusMesh);
-  scene.add(marsMesh);
-
+  for (const [name, orbit] of Object.entries(orbits)) {
+    if (name !== "moon") scene.add(orbit);
+  }
 
   function animate() {
     const delta = clock.getDelta();
     movementControls.update(controls, delta);
 
-    sunMesh.rotation.y += 0.01;
-    earthMesh.rotation.y += 0.01;
-    moonMesh.rotation.y += 0.01;
-    plutoMesh.rotation.y += 0.01;
-    venusMesh.rotation.y += 0.01;
-    jupiterMesh.rotation.y += 0.01;
-    neptuneMesh.rotation.y += 0.01;
-    saturnMesh.rotation.y += 0.01;
-    mercuryMesh.rotation.y += 0.01;
-    uranusMesh.rotation.y += 0.01;
-    marsMesh.rotation.y += 0.01;
+    orbits.mercury.rotation.y += 0.00415;
+    orbits.venus.rotation.y   += 0.00162;
+    orbits.earth.rotation.y   += 0.00100;
+    orbits.moon.rotation.y    += 0.013;
+    orbits.mars.rotation.y    += 0.00053;
+    orbits.jupiter.rotation.y += 0.000084;
+    orbits.saturn.rotation.y  += 0.000034;
+    orbits.uranus.rotation.y  += 0.000012;
+    orbits.neptune.rotation.y += 0.000006;
+    orbits.pluto.rotation.y   += 0.000004;
+
+    meshes.sun.rotation.y     += 0.00039;
+    meshes.mercury.rotation.y += 0.000017;
+    meshes.venus.rotation.y   += -0.000004;
+    meshes.earth.rotation.y   += 0.01;
+    meshes.moon.rotation.y    += 0.00037;
+    meshes.mars.rotation.y    += 0.0097;
+    meshes.jupiter.rotation.y += 0.0244;
+    meshes.saturn.rotation.y  += 0.0227;
+    meshes.uranus.rotation.y  += -0.0138;
+    meshes.neptune.rotation.y += 0.0149;
+    meshes.pluto.rotation.y   += 0.00156;
 
     renderer.render(scene, camera);
   }
