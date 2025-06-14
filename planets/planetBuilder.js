@@ -74,11 +74,11 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     // moon
     const textureMoon = textureLoader.load('public/textures/moon.jpg');
     const { radius: moonRadius, distanceToSun: moonDistance} = await fetchPlanetData("moon");
-    const moonOrbitRadius = 384400 * 1000; // average distance from Earth to Moon in meters
+    const moonOrbitRadius = 0.384400; // average distance from Earth to Moon in meters
     const moon = new Planet(moonRadius * sizeMultplier, textureMoon);
     const moonMesh = moon.createPlanet();
-    const moonOrbit = new THREE.Object3D();
-    moonMesh.position.set(moonOrbitRadius * distanceMultiplier, 0, 0);
+    const moonOrbit = createOrbit(moonMesh, moonOrbitRadius);
+    moonMesh.position.set(moonOrbitRadius, 0, 0);
     moonOrbit.add(moonMesh);
     earthMesh.add(moonOrbit);
     moonOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(5.145), 0, 0));
