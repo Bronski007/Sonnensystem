@@ -10,9 +10,7 @@ export class Planet {
     //creates a planet on the given parameters and returns an object of it
     createPlanet() {
         const geometry = new THREE.SphereGeometry(this.radius, 64, 32);
-        const material = new THREE.MeshStandardMaterial({
-            map: this.texture
-        });
+        const material = new THREE.MeshStandardMaterial({map: this.texture});
         return new THREE.Mesh(geometry, material);
     }
 }
