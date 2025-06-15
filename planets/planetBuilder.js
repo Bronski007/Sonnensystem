@@ -37,16 +37,23 @@ function createOrbit(mesh, distance) {
     return orbit;
 }
 
-// creates the planet objects
+// creates the planet and their orbit
 export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureLoader = new THREE.TextureLoader();
 
     // sun
-    const sunSizeMultplier = 0.000001; // scaling down the sun size
+    const sunSizeMultplier = 0.000005; // scaling down the sun size (prevent it from scaling over merkus orbit)
     const textureSun = textureLoader.load('public/textures/sun.jpg');
     const { radius: sunRadius, distanceToSun: sunDistance } = await fetchPlanetData("sun");
     const sun = new Planet(sunRadius * sunSizeMultplier, textureSun);
     const sunMesh = sun.createPlanet();
+    
+    // Change previous material to MeshBasicMaterial, since the Sun is a light source
+    // and should appear self-illuminated (not affected by scene lighting)
+    sunMesh.material.dispose();
+    sunMesh.material = new THREE.MeshBasicMaterial({ map: textureSun });
+    sunMesh.material.needsUpdate = true;
+
 
     // mercury
     const textureMercury = textureLoader.load('public/textures/mercury.jpg');

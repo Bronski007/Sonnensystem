@@ -15,6 +15,12 @@ async function main() {
   const {sunMesh, orbits, meshes} = await planetBuilder(0.00001, 0.0000001);
 
   scene.add(sunMesh);
+
+  // Pointlight source in the middle of the sun (mimics it light)
+  const sunLight = new THREE.PointLight(0xffffff, 2, 0, 0);
+  sunLight.position.copy(sunMesh.position);
+  scene.add(sunLight); 
+
   for (const [name, orbit] of Object.entries(orbits)) {
     if (name !== "moon") scene.add(orbit);
   }
@@ -53,5 +59,3 @@ async function main() {
 }
 
 main();
-
-// verknüft alle module (main - setup)
