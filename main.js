@@ -3,6 +3,7 @@ import { initScene } from './core/initScene.js';
 import { planetBuilder } from './planets/planetBuilder.js';
 import { initPointerLockControls } from './controls/pointerLockControlsManager.js';
 import { createMovementControls } from './controls/movementManager.js';
+import { solarSystemBuilder } from './systems/solarSystem.js'
 
 async function main() {
   const { scene, camera, renderer } = initScene();
@@ -12,13 +13,14 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
-  const {sunMesh, orbits, meshes, orbitParams} = await planetBuilder(0.00001, 0.0000001);
-
-  scene.add(sunMesh);
+  const distanceMultiplier = 0.0000001;
+  const { meshes } = await planetBuilder(0.00001);
+  const { orbits, orbitParams } = await solarSystemBuilder(meshes, distanceMultiplier);
+  scene.add(meshes.sun);
 
   // Pointlight source in the middle of the sun (mimics it light)
   const sunLight = new THREE.PointLight(0xffffff, 2, 0, 0);
-  sunLight.position.copy(sunMesh.position);
+  sunLight.position.copy(meshes.sun.position);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.width = 1048;
   sunLight.shadow.mapSize.height = 1048;
