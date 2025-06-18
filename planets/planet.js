@@ -1,16 +1,18 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-//Planet Class
+//Planet Class - with inner Ring Object
 export class Planet {
-    constructor(radius, texture) {
+    constructor(radius, texture, Ring) {
         this.radius = radius;
         this.texture = texture;
+        this.Ring = Ring;
     }
-    
-    //creates a planet on the given parameters and returns an object of it
-    createPlanet() {
-        const geometry = new THREE.SphereGeometry(this.radius, 64, 32);
-        const material = new THREE.MeshStandardMaterial({map: this.texture});
-        return new THREE.Mesh(geometry, material);
+}
+
+export class Ring {
+    constructor(innerRadius, outerRadius, texture){
+        this.innerRadius = innerRadius;
+        this.outerRadius = outerRadius;
+        this.texture = texture;
     }
 }

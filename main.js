@@ -41,7 +41,7 @@ async function main() {
     orbitAngles[name] = 0;
   }
 
-  const timeScale = 100000;
+  const timeScale = 10000;
 
   function animate() {
     const delta = clock.getDelta();

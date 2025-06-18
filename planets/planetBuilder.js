@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 import { Planet } from './planet.js'
+import { Ring } from './planet.js';
 
 //Api communication - fetches the radius of a given planet their distance to the sun etc.
 //Source: Bro Code - "How to FETCH data from an API using JavaScript" link: https://www.youtube.com/watch?v=37vxWr0WgQk
@@ -22,7 +23,7 @@ async function fetchPlanetData(planet){
     }
 }
 
-function createOrbit(mesh, distance, eccentricity) {
+function createOrbit(mesh, distance, eccentricity){
     const orbit = new THREE.Object3D();
     
     const semiMajorAxis = distance; // semi-major axis is half the length of the longest diameter of the ellipse
@@ -42,6 +43,24 @@ function createOrbit(mesh, distance, eccentricity) {
     return orbit;
 }
 
+//creates Planet and Ring Meshes
+function createPlanet(planet){
+    const geometry = new THREE.SphereGeometry(planet.radius, 64, 32);
+    const material = new THREE.MeshStandardMaterial({ map: planet.texture });
+    const planetMesh = new THREE.Mesh(geometry, material);
+
+    // add a ring to the PlanetMesh if the planet contains a ring-object
+    if (planet.Ring) {  
+        const ringGeo = new THREE.RingGeometry(planet.Ring.innerRadius, planet.Ring.outerRadius, 64);
+        const ringMat = new THREE.MeshBasicMaterial({map: planet.Ring.texture, side: THREE.DoubleSide, transparent: true}); // visualise ring from bottom and top view
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2; //align ring with the equatorial plane
+        planetMesh.add(ring);
+    }
+
+    return planetMesh;
+}
+
 // creates the planet and their orbit
 export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureLoader = new THREE.TextureLoader();
@@ -49,7 +68,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     // sun
     const sunSizeMultplier = 0.000001; // scaling down the sun size (prevent sun from scaling over merkur orbit)
     const textureSun = textureLoader.load('public/textures/sun.jpg');
-    const { radius: sunRadius, distanceToSun: sunDistance } = await fetchPlanetData("sun");
+    const { radius: sunRadius} = await fetchPlanetData("sun");
     const sunGeometry = new THREE.SphereGeometry(sunRadius * sunSizeMultplier, 64, 32);
     const sunMaterial = new THREE.MeshBasicMaterial({map: textureSun}); // use MeshBasicMaterial for sun to avoid lighting issues
     const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial)
@@ -58,7 +77,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureMercury = textureLoader.load('public/textures/mercury.jpg');
     const { radius: mercuryRadius, distanceToSun: mercuryDistance, eccentricity: mercuryEccentricity, sideralOrbit: mercurySideralOrbit } = await fetchPlanetData("mercury");
     const mercury = new Planet(mercuryRadius * sizeMultplier, textureMercury);
-    const mercuryMesh = mercury.createPlanet();
+    const mercuryMesh = createPlanet(mercury);
     const mercuryOrbit = createOrbit(mercuryMesh, mercuryDistance * distanceMultiplier, mercuryEccentricity);
     mercuryOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(7.00), THREE.MathUtils.degToRad(48.331), 0));
     const mercuryOrbitParams = {distance: mercuryDistance * distanceMultiplier, eccentricity: mercuryEccentricity, sideralOrbit: mercurySideralOrbit, mesh: mercuryMesh};
@@ -67,7 +86,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureVenus = textureLoader.load('public/textures/venus.jpg');
     const { radius: venusRadius, distanceToSun: venusDistance, eccentricity: venusEccentricity, sideralOrbit: venusSideralOrbit } = await fetchPlanetData("venus");
     const venus = new Planet(venusRadius * sizeMultplier, textureVenus);
-    const venusMesh = venus.createPlanet();
+    const venusMesh = createPlanet(venus);
     const venusOrbit = createOrbit(venusMesh, venusDistance * distanceMultiplier, venusEccentricity);
     venusOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(3.39), THREE.MathUtils.degToRad(76.680), 0));
     const venusOrbitParams = {distance: venusDistance * distanceMultiplier, eccentricity: venusEccentricity, sideralOrbit: venusSideralOrbit, mesh: venusMesh};
@@ -76,7 +95,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureEarth = textureLoader.load('public/textures/earth_day.jpg');
     const { radius: earthRadius, distanceToSun: earthDistance, eccentricity: earthEccentricity, sideralOrbit: earthSideralOrbit } = await fetchPlanetData("earth");
     const earth = new Planet(earthRadius * sizeMultplier, textureEarth);
-    const earthMesh = earth.createPlanet();
+    const earthMesh = createPlanet(earth);
     const earthOrbit = createOrbit(earthMesh, earthDistance * distanceMultiplier, earthEccentricity);
     const earthOrbitParams = {distance: earthDistance * distanceMultiplier, eccentricity: earthEccentricity, sideralOrbit: earthSideralOrbit, mesh: earthMesh};
 
@@ -85,7 +104,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const { radius: moonRadius, distanceToSun: moonDistance, eccentricity: moonEccentricity, sideralOrbit: moonSideralOrbit } = await fetchPlanetData("moon");
     const moonOrbitRadius = 384400 * 5; // average distance from Earth to Moon
     const moon = new Planet(moonRadius * sizeMultplier, textureMoon);
-    const moonMesh = moon.createPlanet();
+    const moonMesh = createPlanet(moon);
     const moonOrbit = createOrbit(moonMesh, moonOrbitRadius * distanceMultiplier, moonEccentricity);
     earthMesh.add(moonOrbit);
     moonOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(5.145), THREE.MathUtils.degToRad(125.08), 0));
@@ -95,7 +114,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureMars = textureLoader.load('public/textures/mars.jpg');
     const { radius: marsRadius, distanceToSun: marsDistance, eccentricity: marsEccentricity, sideralOrbit: marsSideralOrbit } = await fetchPlanetData("mars");
     const mars = new Planet(marsRadius * sizeMultplier, textureMars);
-    const marsMesh = mars.createPlanet();
+    const marsMesh = createPlanet(mars);
     const marsOrbit = createOrbit(marsMesh, marsDistance * distanceMultiplier, marsEccentricity);
     marsOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(1.85), THREE.MathUtils.degToRad(49.578), 0));
     const marsOrbitParams = {distance: marsDistance * distanceMultiplier, eccentricity: marsEccentricity, sideralOrbit: marsSideralOrbit, mesh: marsMesh};
@@ -104,26 +123,29 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureJupiter = textureLoader.load('public/textures/jupiter.jpg');
     const { radius: jupiterRadius, distanceToSun: jupiterDistance, eccentricity: jupiterEccentricity, sideralOrbit: jupiterSideralOrbit } = await fetchPlanetData("jupiter");
     const jupiter = new Planet(jupiterRadius * sizeMultplier, textureJupiter);
-    const jupiterMesh = jupiter.createPlanet();
+    const jupiterMesh = createPlanet(jupiter);
     const jupiterOrbit = createOrbit(jupiterMesh, jupiterDistance * distanceMultiplier, jupiterEccentricity);
     jupiterOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(1.31), THREE.MathUtils.degToRad(100.464), 0));
     const jupiterOrbitParams = {distance: jupiterDistance * distanceMultiplier, eccentricity: jupiterEccentricity, sideralOrbit: jupiterSideralOrbit, mesh: jupiterMesh};
 
-    // saturn 
-    // TODO: Saturn Ringe!
+    // saturn
     const textureSaturn = textureLoader.load('public/textures/saturn.jpg');
+    const textureSaturnRing = textureLoader.load('public/textures/saturn ring.png');
     const { radius: saturnRadius, distanceToSun: saturnDistance, eccentricity: saturnEccentricity, sideralOrbit: saturnSideralOrbit  } = await fetchPlanetData("saturn");
-    const saturn = new Planet(saturnRadius * sizeMultplier, textureSaturn);
-    const saturnMesh = saturn.createPlanet();
+    const saturnRing = new Ring(saturnRadius * sizeMultplier + 0.25, saturnRadius * sizeMultplier + 0.4, textureSaturnRing)
+    const saturn = new Planet(saturnRadius * sizeMultplier, textureSaturn, saturnRing);
+    const saturnMesh = createPlanet(saturn);
     const saturnOrbit = createOrbit(saturnMesh, saturnDistance * distanceMultiplier, saturnEccentricity);
     saturnOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(2.49), THREE.MathUtils.degToRad(113.665), 0));
     const saturnOrbitParams = {distance: saturnDistance * distanceMultiplier, eccentricity: saturnEccentricity, sideralOrbit: saturnSideralOrbit, mesh: saturnMesh};
 
     // uranus
     const textureUranus = textureLoader.load('public/textures/uranus.jpg');
+    const textureUranusRing = textureLoader.load('public/textures/saturn ring.png');
     const { radius: uranusRadius, distanceToSun: uranusDistance, eccentricity: uranusEccentricity, sideralOrbit: uranusSideralOrbit  } = await fetchPlanetData("uranus");
-    const uranus = new Planet(uranusRadius * sizeMultplier, textureUranus);
-    const uranusMesh = uranus.createPlanet();
+    const uranusRing = new Ring(uranusRadius * sizeMultplier + 0.25, uranusRadius * sizeMultplier + 0.4, textureUranusRing)
+    const uranus = new Planet(uranusRadius * sizeMultplier, textureUranus, uranusRing);
+    const uranusMesh = createPlanet(uranus);
     const uranusOrbit = createOrbit(uranusMesh, uranusDistance * distanceMultiplier, uranusEccentricity);
     uranusOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(0.77), THREE.MathUtils.degToRad(74.006), 0));
     const uranusOrbitParams = {distance: uranusDistance * distanceMultiplier, eccentricity: uranusEccentricity, sideralOrbit: uranusSideralOrbit, mesh: uranusMesh};
@@ -132,7 +154,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const textureNeptune = textureLoader.load('public/textures/neptune.jpg');
     const { radius: neptuneRadius, distanceToSun: neptuneDistance, eccentricity: neptuneEccentricity, sideralOrbit: neptuneSideralOrbit } = await fetchPlanetData("neptune");
     const neptune = new Planet(neptuneRadius * sizeMultplier, textureNeptune);
-    const neptuneMesh = neptune.createPlanet();
+    const neptuneMesh = createPlanet(neptune);
     const neptuneOrbit = createOrbit(neptuneMesh, neptuneDistance * distanceMultiplier, neptuneEccentricity);
     neptuneOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(1.77), THREE.MathUtils.degToRad(131.784), 0));
     const neptuneOrbitParams = {distance: neptuneDistance * distanceMultiplier, eccentricity: neptuneEccentricity, sideralOrbit: neptuneSideralOrbit, mesh: neptuneMesh};
@@ -141,7 +163,7 @@ export async function planetBuilder(sizeMultplier, distanceMultiplier){
     const texturePluto = textureLoader.load('public/textures/pluto.jpg');
     const { radius: plutoRadius, distanceToSun: plutoDistance, eccentricity: plutoEccentricity, sideralOrbit: plutoSideralOrbit } = await fetchPlanetData("pluto");
     const pluto = new Planet(plutoRadius * sizeMultplier, texturePluto);
-    const plutoMesh = pluto.createPlanet();
+    const plutoMesh = createPlanet(pluto);
     const plutoOrbit = createOrbit(plutoMesh, plutoDistance * distanceMultiplier, plutoEccentricity);
     plutoOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(17.16), THREE.MathUtils.degToRad(110.299), 0));
     const plutoOrbitParams = {distance: plutoDistance * distanceMultiplier, eccentricity: plutoEccentricity, sideralOrbit: plutoSideralOrbit, mesh: plutoMesh};
