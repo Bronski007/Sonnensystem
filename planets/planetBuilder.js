@@ -64,30 +64,34 @@ export async function planetBuilder(sizeMultplier){
 
     // jupiter
     const textureJupiter = textureLoader.load('public/textures/jupiter.jpg');
+    const textureJupiterRing = textureLoader.load('public/textures/jupiter_ring.png');
     const { radius: jupiterRadius } = await fetchPlanetData("jupiter");
-    const jupiter = new Planet(jupiterRadius * sizeMultplier, textureJupiter);
+    const jupiterRing = new Ring(jupiterRadius * sizeMultplier * 1.29, jupiterRadius * sizeMultplier * 1.72, textureJupiterRing)
+    const jupiter = new Planet(jupiterRadius * sizeMultplier, textureJupiter, jupiterRing);
     const jupiterMesh = createPlanet(jupiter);
 
     // saturn
     const textureSaturn = textureLoader.load('public/textures/saturn.jpg');
-    const textureSaturnRing = textureLoader.load('public/textures/saturn ring.png');
+    const textureSaturnRing = textureLoader.load('public/textures/saturn_ring.png');
     const { radius: saturnRadius } = await fetchPlanetData("saturn");
-    const saturnRing = new Ring(saturnRadius * sizeMultplier + 0.25, saturnRadius * sizeMultplier + 0.4, textureSaturnRing)
+    const saturnRing = new Ring(saturnRadius * sizeMultplier * 1.15, saturnRadius * sizeMultplier * 2.4, textureSaturnRing)
     const saturn = new Planet(saturnRadius * sizeMultplier, textureSaturn, saturnRing);
     const saturnMesh = createPlanet(saturn);
 
     // uranus
     const textureUranus = textureLoader.load('public/textures/uranus.jpg');
-    const textureUranusRing = textureLoader.load('public/textures/saturn ring.png');
+    const textureUranusRing = textureLoader.load('public/textures/uranus_ring.png');
     const { radius: uranusRadius } = await fetchPlanetData("uranus");
-    const uranusRing = new Ring(uranusRadius * sizeMultplier + 0.25, uranusRadius * sizeMultplier + 0.4, textureUranusRing)
+    const uranusRing = new Ring(uranusRadius * sizeMultplier * 1.5, uranusRadius * sizeMultplier * 2.0, textureUranusRing)
     const uranus = new Planet(uranusRadius * sizeMultplier, textureUranus, uranusRing);
     const uranusMesh = createPlanet(uranus);
 
     // neptune
     const textureNeptune = textureLoader.load('public/textures/neptune.jpg');
+    const textureNeptuneRing = textureLoader.load('public/textures/neptune_ring.png');
     const { radius: neptuneRadius } = await fetchPlanetData("neptune");
-    const neptune = new Planet(neptuneRadius * sizeMultplier, textureNeptune);
+    const neptuneRing = new Ring(neptuneRadius * sizeMultplier * 1.7, neptuneRadius * sizeMultplier * 2.56, textureNeptuneRing)
+    const neptune = new Planet(neptuneRadius * sizeMultplier, textureNeptune, neptuneRing);
     const neptuneMesh = createPlanet(neptune);
 
     // pluto
