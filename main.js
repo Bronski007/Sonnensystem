@@ -1,4 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm";
 import { initScene } from './core/initScene.js';
 import { planetBuilder } from './planets/planetBuilder.js';
 import { initPointerLockControls } from './controls/pointerLockControlsManager.js';
@@ -12,6 +13,24 @@ async function main() {
   scene.add(controls.getObject());
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
+
+  // star background
+  const starCount = 50000;
+  const positions = [];
+
+  for (let i = 0; i < starCount; i++) {
+    const x = (Math.random() - 0.5) * 10000;
+    const y = (Math.random() - 0.5) * 10000;
+    const z = (Math.random() - 0.5) * 10000;
+    positions.push(x, y, z);
+  }
+
+  const starsGeometry = new THREE.BufferGeometry();
+  starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+  const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1 });
+  const starField = new THREE.Points(starsGeometry, starsMaterial);
+  scene.add(starField);
 
   const distanceMultiplier = 0.0000001;
   const { meshes } = await planetBuilder(0.00001);
@@ -34,8 +53,12 @@ async function main() {
   meshes.moon.castShadow = true;
   meshes.moon.receiveShadow = true;
 
+  const orbitLines = [];
   for (const [name, orbit] of Object.entries(orbits)) {
-    if (name !== "moon") scene.add(orbit);
+    if (name !== "moon") {
+      scene.add(orbit);
+      orbitLines.push(orbit.children[0]);
+    }
   }
 
   const orbitAngles = {};
@@ -43,11 +66,29 @@ async function main() {
     orbitAngles[name] = 0;
   }
 
-  const timeScale = 10000;
+  let timeScale = 10000;
+  let flyingSpeed = 10;
+
+  // gui
+  const gui = new GUI();
+  const params = {
+    timeScale: timeScale,
+    flyingSpeed: flyingSpeed,
+    showOrbits: true
+  };
+  gui.add(params, 'timeScale', 1, 100000000).step(10000).name('Time Scale').onChange((value) => {
+    timeScale = value;
+  });
+  gui.add(params, 'flyingSpeed', 1, 100).step(1).name('Flying Speed').onChange((value) => {
+    flyingSpeed = value;
+  });
+  gui.add(params, 'showOrbits').name('Show Orbits').onChange((value) => {
+    orbitLines.forEach(line => {line.visible = value;});
+  });
 
   function animate() {
     const delta = clock.getDelta();
-    movementControls.update(controls, delta);
+    movementControls.update(controls, delta, flyingSpeed);
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
