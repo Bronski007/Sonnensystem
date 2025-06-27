@@ -74,7 +74,9 @@ async function main() {
   const params = {
     timeScale: timeScale,
     flyingSpeed: flyingSpeed,
-    showOrbits: true
+    showOrbits: true,
+    showLunarEclipse: false,
+    showSolarEclipse: false
   };
   gui.add(params, 'timeScale', 1, 100000000).step(10000).name('Time Scale').onChange((value) => {
     timeScale = value;
@@ -85,6 +87,31 @@ async function main() {
   gui.add(params, 'showOrbits').name('Show Orbits').onChange((value) => {
     orbitLines.forEach(line => {line.visible = value;});
   });
+  
+  const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();
+  const solarCtrl = gui.add(params, 'showSolarEclipse').name('Show Solar Eclipse').listen();
+
+  //method to ensure that only lunar or solar eclipse is active
+  lunarCtrl.onChange((value) => {
+    if (value) {
+      params.showSolarEclipse = false;
+      //logic:
+      
+      
+      solarCtrl.updateDisplay();
+    }
+  });
+
+  solarCtrl.onChange((value) => {
+    if (value) {
+      params.showLunarEclipse = false;
+      //logic:
+
+
+      lunarCtrl.updateDisplay();
+    }
+  });
+
 
   function animate() {
     const delta = clock.getDelta();
