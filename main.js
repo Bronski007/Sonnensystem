@@ -36,8 +36,9 @@ async function main() {
   const { meshes } = await planetBuilder(0.00001);
   const { orbits, orbitParams } = await solarSystemBuilder(meshes, distanceMultiplier);
   scene.add(meshes.sun);
-
-  // Pointlight source in the middle of the sun (mimics it light)
+  scene.add(meshes.moon);
+  
+  // Pointlight source in the middle of the sun
   const sunLight = new THREE.PointLight(0xffffff, 2, 0, 0);
   sunLight.position.copy(meshes.sun.position);
   sunLight.castShadow = true;
@@ -55,10 +56,8 @@ async function main() {
 
   const orbitLines = [];
   for (const [name, orbit] of Object.entries(orbits)) {
-    if (name !== "moon") {
-      scene.add(orbit);
-      orbitLines.push(orbit.children[0]);
-    }
+    scene.add(orbit);
+    orbitLines.push(orbit.children[0]);
   }
 
   const orbitAngles = {};
@@ -91,42 +90,69 @@ async function main() {
   const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();
   const solarCtrl = gui.add(params, 'showSolarEclipse').name('Show Solar Eclipse').listen();
 
-  //method to ensure that only lunar or solar eclipse is active
+  let simulationTime = 0;
+  let savedTimeScale = timeScale;
+
+  // method to ensure that only lunar or solar eclipse is active
   lunarCtrl.onChange((value) => {
     if (value) {
       params.showSolarEclipse = false;
-      //logic:
+
+      // logic:
+      if (timeScale !== 0) {
+        savedTimeScale = timeScale;
+      }
+      timeScale = 0;
+      simulationTime = 0;
       
-      
+      // update GUI
       solarCtrl.updateDisplay();
+    }
+
+    if (!value) {
+      timeScale = savedTimeScale;
     }
   });
 
   solarCtrl.onChange((value) => {
     if (value) {
       params.showLunarEclipse = false;
-      //logic:
 
+      // logic:
+      if (timeScale !== 0) {
+        savedTimeScale = timeScale;
+      }
+      timeScale = 0;
+      simulationTime = 1275000;
 
       lunarCtrl.updateDisplay();
     }
-  });
 
+    if (!value) {
+      timeScale = savedTimeScale;
+    }
+  });
 
   function animate() {
     const delta = clock.getDelta();
+    simulationTime += delta * timeScale;
     movementControls.update(controls, delta, flyingSpeed);
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
       const { distance, eccentricity, sideralOrbit, mesh } = params;
       const angularSpeed = (2 * Math.PI) / (sideralOrbit * 24 * 3600);
-      orbitAngles[name] -= angularSpeed * delta * timeScale;
+      orbitAngles[name] = -angularSpeed * simulationTime;
       const semiMinorAxis = distance * Math.sqrt(1 - Math.pow(eccentricity, 2));
       const focalDistance = Math.sqrt(distance * distance - semiMinorAxis * semiMinorAxis);
       const x = distance * Math.cos(orbitAngles[name]) - focalDistance;
       const z = semiMinorAxis * Math.sin(orbitAngles[name]);
-      mesh.position.set(x, 0, z);
+      if (name === "moon") {
+        const earthPos = meshes.earth.position;
+        mesh.position.set(earthPos.x + x, earthPos.y, earthPos.z + z);
+      } else {
+        mesh.position.set(x, 0, z);
+      }
     }
 
     // rotation of planets around their own axis
