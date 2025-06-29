@@ -56,8 +56,10 @@ async function main() {
 
   const orbitLines = [];
   for (const [name, orbit] of Object.entries(orbits)) {
-    scene.add(orbit);
-    orbitLines.push(orbit.children[0]);
+    if (name != "moon") {
+      scene.add(orbit);
+      orbitLines.push(orbit.children[0]);
+    }
   }
 
   const orbitAngles = {};
@@ -133,6 +135,15 @@ async function main() {
     }
   });
 
+  // moon orbit line
+  const geometry = new THREE.BufferGeometry();
+  const points = new Float32Array((128 + 1) * 3);
+  geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+  const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const moonOrbitLine = new THREE.LineLoop(geometry, material);
+  scene.add(moonOrbitLine);
+  orbitLines.push(moonOrbitLine);
+
   function animate() {
     const delta = clock.getDelta();
     simulationTime += delta * timeScale;
@@ -150,6 +161,21 @@ async function main() {
       if (name === "moon") {
         const earthPos = meshes.earth.position;
         mesh.position.set(earthPos.x + x, earthPos.y, earthPos.z + z);
+
+        // moon orbit line
+        const segments = 128;
+        const positions = moonOrbitLine.geometry.attributes.position.array;
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * 2 * Math.PI;
+          const px = distance * Math.cos(angle) - focalDistance;
+          const pz = semiMinorAxis * Math.sin(angle);
+          const idx = i * 3;
+          positions[idx] = px;
+          positions[idx + 1] = 0;
+          positions[idx + 2] = pz;
+        }
+        moonOrbitLine.geometry.attributes.position.needsUpdate = true;
+        moonOrbitLine.position.copy(earthPos);
       } else {
         mesh.position.set(x, 0, z);
       }

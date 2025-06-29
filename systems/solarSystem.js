@@ -39,7 +39,7 @@ export async function solarSystemBuilder(meshes, distanceMultiplier){
     const earthOrbitParams = {distance: earthDistance * distanceMultiplier, eccentricity: earthEccentricity, sideralOrbit: earthSideralOrbit, mesh: meshes.earth};
 
     const { eccentricity: moonEccentricity, sideralOrbit: moonSideralOrbit } = await fetchPlanetData("moon");
-    const moonOrbitRadius = 3800000; // average distance from Earth to Moon
+    const moonOrbitRadius = 384400 * 5; // average distance from Earth to Moon
     const moonOrbit = createOrbit(meshes.moon, moonOrbitRadius * distanceMultiplier, moonEccentricity);
     moonOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(5.145), THREE.MathUtils.degToRad(125.08), 0));
     const moonOrbitParams = {distance: moonOrbitRadius * distanceMultiplier, eccentricity: moonEccentricity, sideralOrbit: moonSideralOrbit, mesh: meshes.moon};
@@ -73,6 +73,7 @@ export async function solarSystemBuilder(meshes, distanceMultiplier){
     const plutoOrbit = createOrbit(meshes.pluto, plutoDistance * distanceMultiplier, plutoEccentricity);
     plutoOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(17.16), THREE.MathUtils.degToRad(110.299), 0));
     const plutoOrbitParams = {distance: plutoDistance * distanceMultiplier, eccentricity: plutoEccentricity, sideralOrbit: plutoSideralOrbit, mesh: meshes.pluto};
+
 
     return{
         orbits: {
