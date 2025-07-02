@@ -29,7 +29,7 @@ function createPlanet(planet){
     return planetMesh;
 }
 
-// creates the planets
+// creates the planets (based on API Data)
 export async function planetBuilder(sizeMultplier){
     const textureLoader = new THREE.TextureLoader();
     // sun

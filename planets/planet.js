@@ -1,6 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-//Planet Class - with inner Ring Object
+// Planet class with an optional inner Ring object.
+// Not every planet needs a ring — the Ring property can be null.
 export class Planet {
     constructor(radius, texture, Ring, cloudTexture) {
         this.radius = radius;

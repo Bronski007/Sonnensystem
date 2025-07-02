@@ -5,6 +5,7 @@ import { planetBuilder } from './planets/planetBuilder.js';
 import { initPointerLockControls } from './controls/pointerLockControlsManager.js';
 import { createMovementControls } from './controls/movementManager.js';
 import { solarSystemBuilder } from './systems/solarSystem.js'
+import { TransitionManager } from './transitions/transitionManager.js';
 
 async function main() {
   const { scene, camera, renderer } = initScene();
@@ -37,7 +38,7 @@ async function main() {
   const { orbits, orbitParams } = await solarSystemBuilder(meshes, distanceMultiplier);
   scene.add(meshes.sun);
   scene.add(meshes.moon);
-  
+
   // Pointlight source in the middle of the sun
   const sunLight = new THREE.PointLight(0xffffff, 2, 0, 0);
   sunLight.position.copy(meshes.sun.position);
@@ -46,7 +47,7 @@ async function main() {
   sunLight.shadow.mapSize.height = 1048;
   sunLight.shadow.camera.near = 1;
   sunLight.shadow.camera.far = 50;
-  scene.add(sunLight); 
+  scene.add(sunLight);
 
   // earth and moon cast and receive shadows
   meshes.earth.castShadow = true;
@@ -86,32 +87,35 @@ async function main() {
     flyingSpeed = value;
   });
   gui.add(params, 'showOrbits').name('Show Orbits').onChange((value) => {
-    orbitLines.forEach(line => {line.visible = value;});
+    orbitLines.forEach(line => { line.visible = value; });
   });
-  
+
   const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();
   const solarCtrl = gui.add(params, 'showSolarEclipse').name('Show Solar Eclipse').listen();
 
   let simulationTime = 0;
   let savedTimeScale = timeScale;
 
-  // method to ensure that only lunar or solar eclipse is active
+  let transition = null;
+
+  //Gui for Solar/Lunar eclipses
   lunarCtrl.onChange((value) => {
     if (value) {
       params.showSolarEclipse = false;
-
-      // logic:
-      if (timeScale !== 0) {
-        savedTimeScale = timeScale;
-      }
-      timeScale = 0;
-      simulationTime = 0;
-      
-      // update GUI
       solarCtrl.updateDisplay();
-    }
 
-    if (!value) {
+      //start transition to simulationTime 1275000
+      transition = new TransitionManager(
+        simulationTime, //start
+        0,  //end
+        2.0, //time to travel
+        (value) => simulationTime = value,
+        () => {
+          timeScale = 0;
+          console.log("Lunar eclipse transition complete");
+        }
+      );
+    } else {
       timeScale = savedTimeScale;
     }
   });
@@ -119,18 +123,20 @@ async function main() {
   solarCtrl.onChange((value) => {
     if (value) {
       params.showLunarEclipse = false;
-
-      // logic:
-      if (timeScale !== 0) {
-        savedTimeScale = timeScale;
-      }
-      timeScale = 0;
-      simulationTime = 1275000;
-
       lunarCtrl.updateDisplay();
-    }
 
-    if (!value) {
+      //start transition to simulationTime 1275000
+      transition = new TransitionManager(
+        simulationTime, //start
+        1275000,  //end
+        2.0, //time to travel
+        (value) => simulationTime = value,
+        () => {
+          timeScale = 0;
+          console.log("Solar eclipse transition complete");
+        }
+      );
+    } else {
       timeScale = savedTimeScale;
     }
   });
@@ -179,6 +185,13 @@ async function main() {
       } else {
         mesh.position.set(x, 0, z);
       }
+    }
+
+    // Transition Handling from Events
+    if (transition?.isActive()) {
+      transition.update(delta);
+    } else {
+      simulationTime += delta * timeScale;
     }
 
     // rotation of planets around their own axis
