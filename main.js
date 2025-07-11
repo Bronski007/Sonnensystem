@@ -68,6 +68,17 @@ async function main() {
     orbitAngles[name] = 0;
   }
 
+  const planetOutlines = {};
+  for (const [name, mesh] of Object.entries(meshes)) {
+    const edgesGeometry = new THREE.EdgesGeometry(mesh.geometry);
+    const outlineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const outline = new THREE.LineSegments(edgesGeometry, outlineMaterial);
+    outline.scale.set(1.01, 1.01, 1.01);
+    outline.visible = false;
+    planetOutlines[name] = outline;
+    mesh.add(outline);
+  }
+
   let timeScale = 10000;
   let flyingSpeed = 10;
 
@@ -78,7 +89,9 @@ async function main() {
     flyingSpeed: flyingSpeed,
     showOrbits: true,
     showLunarEclipse: false,
-    showSolarEclipse: false
+    showSolarEclipse: false,
+    showPlanetaryOutlines: false,
+    planetaryOutlinesScale: 1.01
   };
   gui.add(params, 'timeScale', 1, 100000000).step(10000).name('Time Scale').onChange((value) => {
     timeScale = value;
@@ -88,6 +101,12 @@ async function main() {
   });
   gui.add(params, 'showOrbits').name('Show Orbits').onChange((value) => {
     orbitLines.forEach(line => { line.visible = value; });
+  });
+  gui.add(params, 'showPlanetaryOutlines').name('Show Planetary Outlines').onChange((value) => {
+    Object.values(planetOutlines).forEach(outline => {outline.visible = value;});
+  });
+  gui.add(params, 'planetaryOutlinesScale', 1.01, 100).step(1).name('Planetary Outlines Scale').onChange((value) => {
+    Object.values(planetOutlines).forEach(outline => {outline.scale.set(value, value, value);});
   });
 
   const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();

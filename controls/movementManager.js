@@ -2,9 +2,9 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
 
 /*
-movement script for navigating in space
-shift = down
-space = up
+  movement script for navigating in space
+  shift = down
+  space = up
 */
 
 

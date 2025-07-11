@@ -88,7 +88,7 @@ export async function solarSystemBuilder(meshes, distanceMultiplier){
             neptune: neptuneOrbit,
             pluto: plutoOrbit
         },
-    orbitParams: {
+        orbitParams: {
             mercury: mercuryOrbitParams,
             venus: venusOrbitParams,
             earth: earthOrbitParams,
