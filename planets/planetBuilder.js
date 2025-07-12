@@ -18,10 +18,18 @@ function createPlanet(planet){
         planetMesh.add(ring);
     }
 
+    if (planet.cloudTexture) {
+        const cloudGeometry = new THREE.SphereGeometry(planet.radius * 1.01, 64, 32);
+        const cloudMaterial = new THREE.MeshStandardMaterial({map: planet.cloudTexture, transparent: true, opacity: 0.5});
+        const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        planetMesh.add(cloudMesh);
+        cloudMesh.rotation.y = Math.PI / 2;
+    }
+
     return planetMesh;
 }
 
-// creates the planets
+// creates the planets (based on API Data)
 export async function planetBuilder(sizeMultplier){
     const textureLoader = new THREE.TextureLoader();
     // sun
@@ -46,8 +54,9 @@ export async function planetBuilder(sizeMultplier){
 
     // earth
     const textureEarth = textureLoader.load('public/textures/earth_day.jpg');
+    const textureEarthClouds = textureLoader.load('public/textures/earth_clouds.png');
     const { radius: earthRadius } = await fetchPlanetData("earth");
-    const earth = new Planet(earthRadius * sizeMultplier, textureEarth);
+    const earth = new Planet(earthRadius * sizeMultplier, textureEarth, null, textureEarthClouds);
     const earthMesh = createPlanet(earth);
 
     // moon

@@ -41,7 +41,6 @@ export async function solarSystemBuilder(meshes, distanceMultiplier){
     const { eccentricity: moonEccentricity, sideralOrbit: moonSideralOrbit } = await fetchPlanetData("moon");
     const moonOrbitRadius = 384400 * 5; // average distance from Earth to Moon
     const moonOrbit = createOrbit(meshes.moon, moonOrbitRadius * distanceMultiplier, moonEccentricity);
-    meshes.earth.add(moonOrbit);
     moonOrbit.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(5.145), THREE.MathUtils.degToRad(125.08), 0));
     const moonOrbitParams = {distance: moonOrbitRadius * distanceMultiplier, eccentricity: moonEccentricity, sideralOrbit: moonSideralOrbit, mesh: meshes.moon};
 
@@ -89,7 +88,7 @@ export async function solarSystemBuilder(meshes, distanceMultiplier){
             neptune: neptuneOrbit,
             pluto: plutoOrbit
         },
-    orbitParams: {
+        orbitParams: {
             mercury: mercuryOrbitParams,
             venus: venusOrbitParams,
             earth: earthOrbitParams,
