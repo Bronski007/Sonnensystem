@@ -121,6 +121,14 @@ async function main() {
   lunarCtrl.onChange((value) => {
     if (value) {
       params.showSolarEclipse = false;
+
+      planetOutlines.earth.visible = true;
+      planetOutlines.moon.visible = true;
+      planetOutlines.earth.scale.set(5, 5, 5);
+      planetOutlines.moon.scale.set(5, 5, 5);
+      planetOutlines.earth.material.color.set(0xff0000);
+      planetOutlines.moon.material.color.set(0xff0000);
+
       solarCtrl.updateDisplay();
 
       //start transition to simulationTime 1275000
@@ -136,12 +144,27 @@ async function main() {
       );
     } else {
       timeScale = savedTimeScale;
+
+      planetOutlines.earth.visible = false;
+      planetOutlines.moon.visible = false;
+      planetOutlines.earth.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.moon.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.earth.material.color.set(0xffffff);
+      planetOutlines.moon.material.color.set(0xffffff);
     }
   });
 
   solarCtrl.onChange((value) => {
     if (value) {
       params.showLunarEclipse = false;
+
+      planetOutlines.earth.visible = true;
+      planetOutlines.moon.visible = true;
+      planetOutlines.earth.scale.set(5, 5, 5);
+      planetOutlines.moon.scale.set(5, 5, 5);
+      planetOutlines.earth.material.color.set(0xff0000);
+      planetOutlines.moon.material.color.set(0xff0000);
+
       lunarCtrl.updateDisplay();
 
       //start transition to simulationTime 1275000
@@ -157,6 +180,13 @@ async function main() {
       );
     } else {
       timeScale = savedTimeScale;
+
+      planetOutlines.earth.visible = false;
+      planetOutlines.moon.visible = false;
+      planetOutlines.earth.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.moon.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.earth.material.color.set(0xffffff);
+      planetOutlines.moon.material.color.set(0xffffff);
     }
   });
 
