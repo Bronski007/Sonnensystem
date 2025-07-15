@@ -1,4 +1,12 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+
+/*
+  movement script for navigating in space
+  shift = down
+  space = up
+*/
+
 
 export function createMovementControls() {
   const move = { forward: false, backward: false, left: false, right: false, up: false, down: false };
