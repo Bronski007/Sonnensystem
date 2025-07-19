@@ -2,8 +2,8 @@ import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/js
 
 
 /*
- * When the user clicks anywhere on the page, the pointer is locked
- * (hidden and captured), enabling mouse movement to control the camera.
+  When the user clicks anywhere on the page, the pointer is locked
+  (hidden and captured), enabling mouse movement to control the camera.
 */
 
 export function initPointerLockControls(camera, renderer) {

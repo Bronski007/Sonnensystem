@@ -33,7 +33,7 @@ function createPlanet(planet){
 export async function planetBuilder(sizeMultplier){
     const textureLoader = new THREE.TextureLoader();
     // sun
-    const sunSizeMultplier = 0.000001; // scaling down the sun size (prevent sun from scaling over merkur orbit)
+    const sunSizeMultplier = 0.000001; // scaling down the sun size (prevent sun from scaling over mercury orbit)
     const textureSun = textureLoader.load('public/textures/sun.jpg');
     const { radius: sunRadius} = await fetchPlanetData("sun");
     const sunGeometry = new THREE.SphereGeometry(sunRadius * sunSizeMultplier, 64, 32);

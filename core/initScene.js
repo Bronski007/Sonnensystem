@@ -1,6 +1,8 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 
-//Basic Scene Setup
+/*
+initial scene set-up
+*/
 export function initScene() {
   const scene = new THREE.Scene();
 

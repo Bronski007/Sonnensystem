@@ -8,6 +8,7 @@ import { solarSystemBuilder } from './systems/solarSystem.js'
 import { TransitionManager } from './transitions/transitionManager.js';
 
 async function main() {
+  //initialise scene
   const { scene, camera, renderer } = initScene();
 
   const controls = initPointerLockControls(camera, renderer);
@@ -33,9 +34,9 @@ async function main() {
   const starField = new THREE.Points(starsGeometry, starsMaterial);
   scene.add(starField);
 
-  const distanceMultiplier = 0.0000001;
+  // create planet meshes and orbits
   const { meshes } = await planetBuilder(0.00001);
-  const { orbits, orbitParams } = await solarSystemBuilder(meshes, distanceMultiplier);
+  const { orbits, orbitParams } = await solarSystemBuilder(meshes, 0.0000001);
   scene.add(meshes.sun);
   scene.add(meshes.moon);
 
@@ -138,7 +139,7 @@ async function main() {
         2.0, //time to travel
         (value) => simulationTime = value,
         () => {
-          timeScale = 0;
+          timeScale = 0; // "freezes" the solarsystem
           console.log("Lunar eclipse transition complete");
         }
       );
@@ -174,7 +175,7 @@ async function main() {
         2.0, //time to travel
         (value) => simulationTime = value,
         () => {
-          timeScale = 0;
+          timeScale = 0; // "freezes" the solarsystem
           console.log("Solar eclipse transition complete");
         }
       );
