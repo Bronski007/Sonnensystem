@@ -56,6 +56,7 @@ async function main() {
   meshes.moon.castShadow = true;
   meshes.moon.receiveShadow = true;
 
+  // collecting orbitLines and orbitAngles for later use
   const orbitLines = [];
   for (const [name, orbit] of Object.entries(orbits)) {
     if (name != "moon") {
@@ -69,6 +70,7 @@ async function main() {
     orbitAngles[name] = 0;
   }
 
+  // creating planetary outlines
   const planetOutlines = {};
   for (const [name, mesh] of Object.entries(meshes)) {
     const edgesGeometry = new THREE.EdgesGeometry(mesh.geometry);
@@ -80,7 +82,8 @@ async function main() {
     mesh.add(outline);
   }
 
-  let timeScale = 10000;
+  // default values
+  let timeScale = 10000; // 10000 times faster than real life
   let flyingSpeed = 10;
 
   // gui
@@ -113,21 +116,22 @@ async function main() {
   const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();
   const solarCtrl = gui.add(params, 'showSolarEclipse').name('Show Solar Eclipse').listen();
 
-  let simulationTime = 0;
+  let simulationTime = 0; // stores the elapsed time to quickly jump to eclipses
   let savedTimeScale = timeScale;
 
   let transition = null;
 
-  //Gui for Solar/Lunar eclipses
+  // listeners for Solar/Lunar eclipses
   lunarCtrl.onChange((value) => {
     if (value) {
       params.showSolarEclipse = false;
 
+      // enabling planetary outlines for earth and moon for better visibility
       planetOutlines.earth.visible = true;
       planetOutlines.moon.visible = true;
-      planetOutlines.earth.scale.set(5, 5, 5);
+      planetOutlines.earth.scale.set(5, 5, 5); // making the outlines bigger
       planetOutlines.moon.scale.set(5, 5, 5);
-      planetOutlines.earth.material.color.set(0xff0000);
+      planetOutlines.earth.material.color.set(0xff0000); // making the outlines red
       planetOutlines.moon.material.color.set(0xff0000);
 
       solarCtrl.updateDisplay();
@@ -146,11 +150,12 @@ async function main() {
     } else {
       timeScale = savedTimeScale;
 
+      // disabling planetary outlines
       planetOutlines.earth.visible = false;
       planetOutlines.moon.visible = false;
-      planetOutlines.earth.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.earth.scale.set(1.01, 1.01, 1.01); // back to default size
       planetOutlines.moon.scale.set(1.01, 1.01, 1.01);
-      planetOutlines.earth.material.color.set(0xffffff);
+      planetOutlines.earth.material.color.set(0xffffff); // back to white
       planetOutlines.moon.material.color.set(0xffffff);
     }
   });
@@ -159,11 +164,12 @@ async function main() {
     if (value) {
       params.showLunarEclipse = false;
 
+      // enabling planetary outlines for earth and moon for better visibility
       planetOutlines.earth.visible = true;
       planetOutlines.moon.visible = true;
-      planetOutlines.earth.scale.set(5, 5, 5);
+      planetOutlines.earth.scale.set(5, 5, 5); // making the outlines bigger
       planetOutlines.moon.scale.set(5, 5, 5);
-      planetOutlines.earth.material.color.set(0xff0000);
+      planetOutlines.earth.material.color.set(0xff0000); // making the outlines red
       planetOutlines.moon.material.color.set(0xff0000);
 
       lunarCtrl.updateDisplay();
@@ -182,11 +188,12 @@ async function main() {
     } else {
       timeScale = savedTimeScale;
 
+      // disabling planetary outlines
       planetOutlines.earth.visible = false;
       planetOutlines.moon.visible = false;
-      planetOutlines.earth.scale.set(1.01, 1.01, 1.01);
+      planetOutlines.earth.scale.set(1.01, 1.01, 1.01); // back to default size
       planetOutlines.moon.scale.set(1.01, 1.01, 1.01);
-      planetOutlines.earth.material.color.set(0xffffff);
+      planetOutlines.earth.material.color.set(0xffffff); // back to white
       planetOutlines.moon.material.color.set(0xffffff);
     }
   });
@@ -215,6 +222,7 @@ async function main() {
       const x = distance * Math.cos(orbitAngles[name]) - focalDistance;
       const z = semiMinorAxis * Math.sin(orbitAngles[name]);
       if (name === "moon") {
+        // moon positioned relativly to earth
         const earthPos = meshes.earth.position;
         mesh.position.set(earthPos.x + x, earthPos.y, earthPos.z + z);
 
