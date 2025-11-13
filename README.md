@@ -1,4 +1,4 @@
-Kürteil Computergrafik Sommersemester 2025 HTW Berlin <br>
+Kürteil Mixed Reality Wintersemester 2025/2026 HTW Berlin <br>
 Thema: Sonnensystem <br>
 <br>
 Texturquellen: https://www.solarsystemscope.com/textures/
