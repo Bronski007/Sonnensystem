@@ -2,3 +2,11 @@ html, body {
     margin: 0;
     height: 100%;
 }
+
+#ARButton {
+    margin-right: 20%;
+}
+
+#VRButton {
+    margin-left: 20%;
+}

@@ -1,4 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import { ARButton } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js";
+import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js";
+import { XRControllerModelFactory } from "./XR/XRControllerModelFactory.js";
 import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm";
 import { initScene } from './core/initScene.js';
 import { planetBuilder } from './planets/planetBuilder.js';
@@ -7,14 +10,103 @@ import { createMovementControls } from './controls/movementManager.js';
 import { solarSystemBuilder } from './systems/solarSystem.js'
 import { TransitionManager } from './transitions/transitionManager.js';
 
+// ToDo: add XR UI: https://github.com/felixmariotto/three-mesh-ui
+
 async function main() {
   //initialise scene
   const { scene, camera, renderer } = initScene();
+
+  // XR buttons
+  document.body.appendChild(ARButton.createButton(renderer))
+  document.body.appendChild(VRButton.createButton(renderer))
+
+  // ToDo: remove background when AR is being selected
+
+  const dolly = new THREE.Group();
+  dolly.position.set(0, 0, 75);
+  dolly.add(camera);
+  scene.add(dolly);
 
   const controls = initPointerLockControls(camera, renderer);
   scene.add(controls.getObject());
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
+
+  // XR
+  // show controller models
+  const controllerModelFactory = new XRControllerModelFactory()
+
+  const controllerGrip1 = renderer.xr.getControllerGrip(0);
+  const model1 = controllerModelFactory.createControllerModel(controllerGrip1);
+  controllerGrip1.add(model1);
+  dolly.add(controllerGrip1);
+
+  const controllerGrip2 = renderer.xr.getControllerGrip(1);
+  const model2 = controllerModelFactory.createControllerModel(controllerGrip2);
+  controllerGrip2.add(model2);
+  dolly.add(controllerGrip2);
+
+  // handle controller inputs
+  function onSelectStart() {
+    // ToDo: Add code for when user presses their controller
+  }
+
+  function onSelectEnd() {
+    // ToDo: Add code for when user releases the button on their controller
+  }
+
+  // get controller inputs
+  const controller1 = renderer.xr.getController(0);
+  controller1.addEventListener("selectstart", onSelectStart);
+  controller1.addEventListener('selectend', onSelectEnd);
+  controller1.addEventListener('connected', function (event) {
+    this.add(buildController(event.data));
+  } );
+  controller1.addEventListener('disconnected', function () {
+    this.remove(this.children[0]);
+  } );
+  dolly.add(controller1);
+
+  const controller2 = renderer.xr.getController(1);
+  controller2.addEventListener("selectstart", onSelectStart);
+  controller2.addEventListener('selectend', onSelectEnd);
+  controller2.addEventListener('connected', function (event) {
+    this.add(buildController(event.data));
+  } );
+  controller2.addEventListener('disconnected', function () {
+    this.remove(this.children[0]);
+  } );
+  dolly.add(controller2);
+
+  const raycaster1 = new THREE.Raycaster();
+  const raycaster2 = new THREE.Raycaster();
+
+  function buildController(data) {
+    // laser pointer line
+    switch (data.targetRayMode) {
+      case 'tracked-pointer':
+        var geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, -5], 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute([0, 1, 1, 0, 0.5, 1], 3));
+
+        var material = new THREE.LineBasicMaterial({vertexColors: true, blending: THREE.AdditiveBlending, transparent: true});
+
+        return new THREE.Line(geometry, material);
+
+      case 'gaze':
+        var geometry = new THREE.RingBufferGeometry(0.02, 0.04, 32).translate(0, 0, - 1);
+        var material = new THREE.MeshBasicMaterial({ opacity: 0.5, transparent: true});
+        return new THREE.Mesh(geometry, material);
+    }
+  }
+
+  // ToDo: check if working correctly
+  function handleThumbstick(controller) {
+    if (!controller.gamepad) return { x: 0, y: 0 };
+
+    const axes = controller.gamepad.axes;
+    return { x: axes[0], y: axes[1] };
+  }
 
   // star background
   const starCount = 50000;
@@ -207,10 +299,38 @@ async function main() {
   scene.add(moonOrbitLine);
   orbitLines.push(moonOrbitLine);
 
+  let tempMatrix1 = new THREE.Matrix4();
+  let tempMatrix2 = new THREE.Matrix4();
+
+  const room = new THREE.Group();
+  room.add(meshes.sun);
+  room.add(meshes.mercury);
+  room.add(meshes.venus);
+  room.add(meshes.earth);
+  room.add(meshes.moon);
+  room.add(meshes.mars);
+  room.add(meshes.jupiter);
+  room.add(meshes.saturn);
+  room.add(meshes.uranus);
+  room.add(meshes.neptune);
+  room.add(meshes.pluto);
+  scene.add(room);
+
+  let intersectedObject, intersectedPosition;
+
   function animate() {
     const delta = clock.getDelta();
     simulationTime += delta * timeScale;
     movementControls.update(controls, delta, flyingSpeed);
+
+    // xr movement
+    const thumbstick = handleThumbstick(controller1);
+    if (thumbstick.x !== 0 || thumbstick.y !== 0) {
+      const moveVector = new THREE.Vector3(-thumbstick.x, 0, -thumbstick.y); 
+      moveVector.applyQuaternion(camera.quaternion);
+      moveVector.multiplyScalar(flyingSpeed * delta * 5);
+      dolly.position.add(moveVector);
+    }
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
@@ -264,6 +384,43 @@ async function main() {
     meshes.uranus.rotation.y += (2 * Math.PI / (-17.2 * 3600)) * delta * timeScale;
     meshes.neptune.rotation.y += (2 * Math.PI / (16.1 * 3600)) * delta * timeScale;
     meshes.pluto.rotation.y += (2 * Math.PI / (153.3 * 3600)) * delta * timeScale;
+
+    // xr raycasting
+    // controller 1
+    tempMatrix1.identity().extractRotation(controller1.matrixWorld);
+    raycaster1.ray.origin.setFromMatrixPosition(controller1.matrixWorld);
+    raycaster1.ray.direction.set(0, 0, - 1).applyMatrix4(tempMatrix1);
+
+    var intersects1 = raycaster1.intersectObjects(room.children);
+
+    if (intersects1.length > 0) {
+      intersectedObject = intersects1[0].object;
+      intersectedPosition = intersects1[0].point;
+
+      // ToDo: do something to show that the intersectedObject is selected
+      // intersectedObject.rotation.y += .1;
+
+    } else {
+      intersectedObject = undefined;
+    }
+
+    // controller 2
+    tempMatrix2.identity().extractRotation(controller2.matrixWorld);
+    raycaster2.ray.origin.setFromMatrixPosition(controller2.matrixWorld);
+    raycaster2.ray.direction.set(0, 0, - 1).applyMatrix4(tempMatrix2);
+
+    var intersects2 = raycaster2.intersectObjects(room.children);
+
+    if (intersects2.length > 0) {
+      intersectedObject = intersects2[0].object;
+      intersectedPosition = intersects2[0].point;
+
+      // ToDo: do something to show that the intersectedObject is selected
+      // intersectedObject.rotation.y += .1;
+
+    } else {
+      intersectedObject = undefined;
+    }
 
     renderer.render(scene, camera);
   }
