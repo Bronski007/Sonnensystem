@@ -1,301 +1,156 @@
-// source: https://shenshen.mit.edu/git/shensquared/390logo/-/blob/master/renderer/jsm/webxr/XRControllerModelFactory.js?ref_type=heads
-
 import {
-	Mesh,
-	MeshBasicMaterial,
-	Object3D,
-	SphereGeometry,
+    Mesh,
+    MeshBasicMaterial,
+    Object3D,
+    SphereGeometry,
 } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 import { GLTFLoader } from './gltfloader.js';
 
 import {
-	Constants as MotionControllerConstants,
-	fetchProfile,
-	MotionController
+    MotionController,
+    fetchProfile,
+    Constants as MotionControllerConstants
 } from 'https://cdn.jsdelivr.net/npm/@webxr-input-profiles/motion-controllers@1.0.0/dist/motion-controllers.module.js';
-
-const DEFAULT_PROFILES_PATH = 'https://cdn.jsdelivr.net/npm/@webxr-input-profiles/assets@1.0/dist/profiles';
-const DEFAULT_PROFILE = 'generic-trigger';
 
 class XRControllerModel extends Object3D {
 
-	constructor() {
+    constructor() {
+        super();
+        this.motionController = null;
+        this.envMap = null;
+    }
 
-		super();
+    setEnvironmentMap(envMap) {
+        if (this.envMap === envMap) return;
+        this.envMap = envMap;
 
-		this.motionController = null;
-		this.envMap = null;
+        this.traverse(child => {
+            if (child.isMesh) {
+                child.material.envMap = this.envMap;
+                child.material.needsUpdate = true;
+            }
+        });
+        return this;
+    }
 
-	}
+    updateMatrixWorld(force) {
+        super.updateMatrixWorld(force);
+        if (!this.motionController) return;
 
-	setEnvironmentMap( envMap ) {
+        this.motionController.updateFromGamepad?.();
 
-		if ( this.envMap == envMap ) {
+        if (this.motionController?.components) {
+            Object.values(this.motionController.components).forEach(component => {
+                Object.values(component.visualResponses || {}).forEach(visual => {
+                    const { valueNode, minNode, maxNode, value, valueNodeProperty } = visual;
+                    if (!valueNode) return;
 
-			return this;
-
-		}
-
-		this.envMap = envMap;
-		this.traverse( ( child ) => {
-
-			if ( child.isMesh ) {
-
-				child.material.envMap = this.envMap;
-				child.material.needsUpdate = true;
-
-			}
-
-		} );
-
-		return this;
-
-	}
-
-	/**
-	 * Polls data from the XRInputSource and updates the model's components to match
-	 * the real world data
-	 */
-	updateMatrixWorld( force ) {
-
-		super.updateMatrixWorld( force );
-
-		if ( ! this.motionController ) return;
-
-		// Cause the MotionController to poll the Gamepad for data
-		this.motionController.updateFromGamepad();
-
-		// Update the 3D model to reflect the button, thumbstick, and touchpad state
-		Object.values( this.motionController.components ).forEach( ( component ) => {
-
-			// Update node data based on the visual responses' current states
-			Object.values( component.visualResponses ).forEach( ( visualResponse ) => {
-
-				const { valueNode, minNode, maxNode, value, valueNodeProperty } = visualResponse;
-
-				// Skip if the visual response node is not found. No error is needed,
-				// because it will have been reported at load time.
-				if ( ! valueNode ) return;
-
-				// Calculate the new properties based on the weight supplied
-				if ( valueNodeProperty === MotionControllerConstants.VisualResponseProperty.VISIBILITY ) {
-
-					valueNode.visible = value;
-
-				} else if ( valueNodeProperty === MotionControllerConstants.VisualResponseProperty.TRANSFORM ) {
-
-					valueNode.quaternion.slerpQuaternions(
-						minNode.quaternion,
-						maxNode.quaternion,
-						value
-					);
-
-					valueNode.position.lerpVectors(
-						minNode.position,
-						maxNode.position,
-						value
-					);
-
-				}
-
-			} );
-
-		} );
-
-	}
-
+                    if (valueNodeProperty === MotionControllerConstants.VisualResponseProperty.VISIBILITY) {
+                        valueNode.visible = value;
+                    } else if (valueNodeProperty === MotionControllerConstants.VisualResponseProperty.TRANSFORM) {
+                        valueNode.quaternion.slerpQuaternions(minNode.quaternion, maxNode.quaternion, value);
+                        valueNode.position.lerpVectors(minNode.position, maxNode.position, value);
+                    }
+                });
+            });
+        }
+    }
 }
 
-/**
- * Walks the model's tree to find the nodes needed to animate the components and
- * saves them to the motionContoller components for use in the frame loop. When
- * touchpads are found, attaches a touch dot to them.
- */
-function findNodes( motionController, scene ) {
+function findNodes(motionController, scene) {
+    // Durchsucht die Szene nach relevanten Knoten für Animationen
+    Object.values(motionController.components).forEach(component => {
+        Object.values(component.visualResponses || {}).forEach(visual => {
+            const { valueNodeName, minNodeName, maxNodeName, valueNodeProperty } = visual;
 
-	// Loop through the components and find the nodes needed for each components' visual responses
-	Object.values( motionController.components ).forEach( ( component ) => {
+            if (valueNodeProperty === MotionControllerConstants.VisualResponseProperty.TRANSFORM) {
+                visual.minNode = scene.getObjectByName(minNodeName);
+                visual.maxNode = scene.getObjectByName(maxNodeName);
 
-		const { type, touchPointNodeName, visualResponses } = component;
+                if (!visual.minNode) console.warn(`MinNode ${minNodeName} not found`);
+                if (!visual.maxNode) console.warn(`MaxNode ${maxNodeName} not found`);
+            }
 
-		if ( type === MotionControllerConstants.ComponentType.TOUCHPAD ) {
+            visual.valueNode = scene.getObjectByName(valueNodeName);
+            if (!visual.valueNode) console.warn(`ValueNode ${valueNodeName} not found`);
+        });
 
-			component.touchPointNode = scene.getObjectByName( touchPointNodeName );
-			if ( component.touchPointNode ) {
-
-				// Attach a touch dot to the touchpad.
-				const sphereGeometry = new SphereGeometry( 0.001 );
-				const material = new MeshBasicMaterial( { color: 0x0000FF } );
-				const sphere = new Mesh( sphereGeometry, material );
-				component.touchPointNode.add( sphere );
-
-			} else {
-
-				console.warn( `Could not find touch dot, ${component.touchPointNodeName}, in touchpad component ${component.id}` );
-
-			}
-
-		}
-
-		// Loop through all the visual responses to be applied to this component
-		Object.values( visualResponses ).forEach( ( visualResponse ) => {
-
-			const { valueNodeName, minNodeName, maxNodeName, valueNodeProperty } = visualResponse;
-
-			// If animating a transform, find the two nodes to be interpolated between.
-			if ( valueNodeProperty === MotionControllerConstants.VisualResponseProperty.TRANSFORM ) {
-
-				visualResponse.minNode = scene.getObjectByName( minNodeName );
-				visualResponse.maxNode = scene.getObjectByName( maxNodeName );
-
-				// If the extents cannot be found, skip this animation
-				if ( ! visualResponse.minNode ) {
-
-					console.warn( `Could not find ${minNodeName} in the model` );
-					return;
-
-				}
-
-				if ( ! visualResponse.maxNode ) {
-
-					console.warn( `Could not find ${maxNodeName} in the model` );
-					return;
-
-				}
-
-			}
-
-			// If the target node cannot be found, skip this animation
-			visualResponse.valueNode = scene.getObjectByName( valueNodeName );
-			if ( ! visualResponse.valueNode ) {
-
-				console.warn( `Could not find ${valueNodeName} in the model` );
-
-			}
-
-		} );
-
-	} );
-
+        if (component.type === MotionControllerConstants.ComponentType.TOUCHPAD && component.touchPointNodeName) {
+            component.touchPointNode = scene.getObjectByName(component.touchPointNodeName);
+            if (component.touchPointNode) {
+                const sphere = new Mesh(new SphereGeometry(0.001), new MeshBasicMaterial({ color: 0x0000FF }));
+                component.touchPointNode.add(sphere);
+            }
+        }
+    });
 }
 
-function addAssetSceneToControllerModel( controllerModel, scene ) {
+function addAssetSceneToControllerModel(controllerModel, scene) {
+    findNodes(controllerModel.motionController, scene);
 
-	// Find the nodes needed for animation and cache them on the motionController.
-	findNodes( controllerModel.motionController, scene );
+    if (controllerModel.envMap) {
+        scene.traverse(child => {
+            if (child.isMesh) {
+                child.material.envMap = controllerModel.envMap;
+                child.material.needsUpdate = true;
+            }
+        });
+    }
 
-	// Apply any environment map that the mesh already has set.
-	if ( controllerModel.envMap ) {
-
-		scene.traverse( ( child ) => {
-
-			if ( child.isMesh ) {
-
-				child.material.envMap = controllerModel.envMap;
-				child.material.needsUpdate = true;
-
-			}
-
-		} );
-
-	}
-
-	// Add the glTF scene to the controllerModel.
-	controllerModel.add( scene );
-
+    controllerModel.add(scene);
 }
 
 class XRControllerModelFactory {
 
-	constructor( gltfLoader = null ) {
+    constructor(gltfLoader = null) {
+        this.gltfLoader = gltfLoader || new GLTFLoader();
+        this.path = './public/assets'; // Pfad zu local heruntergeladenen Assets
+        this._assetCache = {};
+    }
 
-		this.gltfLoader = gltfLoader;
-		this.path = DEFAULT_PROFILES_PATH;
-		this._assetCache = {};
+    createControllerModel(controller) {
+        const controllerModel = new XRControllerModel();
+        let scene = null;
 
-		// If a GLTFLoader wasn't supplied to the constructor create a new one.
-		if ( ! this.gltfLoader ) {
+        controller.addEventListener('connected', (event) => {
+            const xrInputSource = event.data;
+            if (xrInputSource.targetRayMode !== 'tracked-pointer' || !xrInputSource.gamepad) return;
 
-			this.gltfLoader = new GLTFLoader();
+            // fetchProfile lädt die lokalen profile.json + Assets
+            fetchProfile(xrInputSource, `${this.path}/meta-quest-touch-plus`, 'meta-quest-touch-plus')
+                .then(({ profile, assetPath }) => {
+                    controllerModel.motionController = new MotionController(xrInputSource, profile, assetPath);
 
-		}
+                    const handedness = xrInputSource.handedness; // left / right
+                    const assetUrl = `${this.path}/meta-quest-touch-plus/${handedness}.glb`;
 
-	}
+                    const cachedAsset = this._assetCache[assetUrl];
+                    if (cachedAsset) {
+                        scene = cachedAsset.scene.clone();
+                        addAssetSceneToControllerModel(controllerModel, scene);
+                    } else {
+                        this.gltfLoader.load(assetUrl,
+                            (asset) => {
+                                this._assetCache[assetUrl] = asset;
+                                scene = asset.scene.clone();
+                                addAssetSceneToControllerModel(controllerModel, scene);
+                            },
+                            null,
+                            () => console.error(`Asset ${assetUrl} missing or malformed.`)
+                        );
+                    }
+                })
+                .catch(err => console.warn(err));
+        });
 
-	createControllerModel( controller ) {
+        controller.addEventListener('disconnected', () => {
+            controllerModel.remove(scene);
+            scene = null;
+        });
 
-		const controllerModel = new XRControllerModel();
-		let scene = null;
-
-		controller.addEventListener( 'connected', ( event ) => {
-
-			const xrInputSource = event.data;
-
-			if ( xrInputSource.targetRayMode !== 'tracked-pointer' || ! xrInputSource.gamepad ) return;
-
-			fetchProfile( xrInputSource, this.path, DEFAULT_PROFILE ).then( ( { profile, assetPath } ) => {
-
-				controllerModel.motionController = new MotionController(
-					xrInputSource,
-					profile,
-					assetPath
-				);
-
-				const cachedAsset = this._assetCache[ controllerModel.motionController.assetUrl ];
-				if ( cachedAsset ) {
-
-					scene = cachedAsset.scene.clone();
-
-					addAssetSceneToControllerModel( controllerModel, scene );
-
-				} else {
-
-					if ( ! this.gltfLoader ) {
-
-						throw new Error( 'GLTFLoader not set.' );
-
-					}
-
-					this.gltfLoader.setPath( '' );
-					this.gltfLoader.load( controllerModel.motionController.assetUrl, ( asset ) => {
-
-						this._assetCache[ controllerModel.motionController.assetUrl ] = asset;
-
-						scene = asset.scene.clone();
-
-						addAssetSceneToControllerModel( controllerModel, scene );
-
-					},
-					null,
-					() => {
-
-						throw new Error( `Asset ${controllerModel.motionController.assetUrl} missing or malformed.` );
-
-					} );
-
-				}
-
-			} ).catch( ( err ) => {
-
-				console.warn( err );
-
-			} );
-
-		} );
-
-		controller.addEventListener( 'disconnected', () => {
-
-			controllerModel.motionController = null;
-			controllerModel.remove( scene );
-			scene = null;
-
-		} );
-
-		return controllerModel;
-
-	}
-
+        return controllerModel;
+    }
 }
 
 export { XRControllerModelFactory };

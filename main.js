@@ -20,8 +20,6 @@ async function main() {
   document.body.appendChild(ARButton.createButton(renderer))
   document.body.appendChild(VRButton.createButton(renderer))
 
-  // ToDo: remove background when AR is being selected
-
   const dolly = new THREE.Group();
   dolly.position.set(0, 0, 75);
   dolly.add(camera);
@@ -39,12 +37,12 @@ async function main() {
   const controllerGrip1 = renderer.xr.getControllerGrip(0);
   const model1 = controllerModelFactory.createControllerModel(controllerGrip1);
   controllerGrip1.add(model1);
-  dolly.add(controllerGrip1);
+  scene.add(controllerGrip1);
 
   const controllerGrip2 = renderer.xr.getControllerGrip(1);
   const model2 = controllerModelFactory.createControllerModel(controllerGrip2);
   controllerGrip2.add(model2);
-  dolly.add(controllerGrip2);
+  scene.add(controllerGrip2);
 
   // handle controller inputs
   function onSelectStart() {
@@ -318,19 +316,30 @@ async function main() {
 
   let intersectedObject, intersectedPosition;
 
+  function updateXRMovement(controller, delta) {
+    const thumbstick = handleThumbstick(controller);
+
+    if (thumbstick.x !== 0 || thumbstick.y !== 0) {
+      const moveVector = new THREE.Vector3(-thumbstick.x, 0, -thumbstick.y);
+      
+      const cameraQuaternion = camera.quaternion.clone();
+      const euler = new THREE.Euler().setFromQuaternion(cameraQuaternion, 'YXZ');
+      const yRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, euler.y, 0));
+      moveVector.applyQuaternion(yRotation);
+
+      moveVector.multiplyScalar(flyingSpeed * delta);
+
+      room.position.add(moveVector);
+    }
+  }
+
   function animate() {
     const delta = clock.getDelta();
     simulationTime += delta * timeScale;
     movementControls.update(controls, delta, flyingSpeed);
 
     // xr movement
-    const thumbstick = handleThumbstick(controller1);
-    if (thumbstick.x !== 0 || thumbstick.y !== 0) {
-      const moveVector = new THREE.Vector3(-thumbstick.x, 0, -thumbstick.y); 
-      moveVector.applyQuaternion(camera.quaternion);
-      moveVector.multiplyScalar(flyingSpeed * delta * 5);
-      dolly.position.add(moveVector);
-    }
+    updateXRMovement(controller1, delta);
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
