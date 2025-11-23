@@ -12,7 +12,7 @@ export function initScene() {
   const ambientLight = new THREE.AmbientLight(0x333333);
   scene.add(ambientLight);
 
-  const renderer = new THREE.WebGLRenderer({antialias: true});
+  const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer shadows

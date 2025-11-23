@@ -21,13 +21,13 @@ async function main() {
   document.body.appendChild(ARButton.createButton(renderer))
   document.body.appendChild(VRButton.createButton(renderer))
 
+  const controls = initPointerLockControls(camera, renderer);
+
   const dolly = new THREE.Group();
   dolly.position.set(0, 0, 75);
-  dolly.add(camera);
+  dolly.add(controls.object);
   scene.add(dolly);
 
-  const controls = initPointerLockControls(camera, renderer);
-  scene.add(controls.object);
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
@@ -38,12 +38,12 @@ async function main() {
   const controllerGrip1 = renderer.xr.getControllerGrip(0);
   const model1 = controllerModelFactory.createControllerModel(controllerGrip1);
   controllerGrip1.add(model1);
-  scene.add(controllerGrip1);
+  dolly.add(controllerGrip1);
 
   const controllerGrip2 = renderer.xr.getControllerGrip(1);
   const model2 = controllerModelFactory.createControllerModel(controllerGrip2);
   controllerGrip2.add(model2);
-  scene.add(controllerGrip2);
+  dolly.add(controllerGrip2);
 
   // handle controller inputs
   function onSelectStart() {
@@ -60,10 +60,14 @@ async function main() {
   controller1.addEventListener('selectend', onSelectEnd);
   controller1.addEventListener('connected', function (event) {
     this.add(buildController(event.data));
-  } );
+    this.userData.gamepad = event.data.gamepad;
+    this.userData.handedness = event.data.handedness;
+  });
   controller1.addEventListener('disconnected', function () {
     this.remove(this.children[0]);
-  } );
+    this.userData.gamepad = undefined;
+    this.userData.handedness = undefined;
+  });
   dolly.add(controller1);
 
   const controller2 = renderer.xr.getController(1);
@@ -71,42 +75,52 @@ async function main() {
   controller2.addEventListener('selectend', onSelectEnd);
   controller2.addEventListener('connected', function (event) {
     this.add(buildController(event.data));
-  } );
+    this.userData.gamepad = event.data.gamepad;
+    this.userData.handedness = event.data.handedness; 
+  });
   controller2.addEventListener('disconnected', function () {
     this.remove(this.children[0]);
-  } );
+    this.userData.gamepad = undefined;
+    this.userData.handedness = undefined;
+  });
   dolly.add(controller2);
 
   const raycaster1 = new THREE.Raycaster();
   const raycaster2 = new THREE.Raycaster();
 
   function buildController(data) {
-    // laser pointer line
     switch (data.targetRayMode) {
       case 'tracked-pointer':
-        const geometry = new THREE.BufferGeometry();
-        const points = [ new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -5) ];
-        geometry.setFromPoints(points);
+        const segments = 20;
+        const points = [];
+        const colors = [];
 
-        const material = new THREE.LineBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending, transparent: true});
+        for (let i = 0; i <= segments; i++) {
+          const t = i / segments;
+          points.push(new THREE.Vector3(0, 0, -t)); 
+          colors.push(0, 1, 1, 1 - t);
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+        const colorAttr = new Float32Array(points.length * 4);
+        for (let i = 0; i < points.length; i++) {
+          colorAttr[i*4 + 0] = 0;
+          colorAttr[i*4 + 1] = 1;
+          colorAttr[i*4 + 2] = 1;
+          colorAttr[i*4 + 3] = 1 - i/segments;
+        }
+        geometry.setAttribute('color', new THREE.BufferAttribute(colorAttr, 4));
+
+        const material = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true
+        });
 
         const line = new THREE.Line(geometry, material);
         line.name = "laser";
         return line;
-
-      case 'gaze':
-        const geo = new THREE.RingBufferGeometry(0.02, 0.04, 32).translate(0, 0, - 1);
-        const mat = new THREE.MeshBasicMaterial({ opacity: 0.5, transparent: true});
-        return new THREE.Mesh(geo, mat);
     }
-  }
-
-  // ToDo: check if working correctly
-  function handleThumbstick(controller) {
-    if (!controller.gamepad) return { x: 0, y: 0 };
-
-    const axes = controller.gamepad.axes;
-    return { x: axes[0], y: axes[1] };
   }
 
   // star background
@@ -178,6 +192,7 @@ async function main() {
   // default values
   let timeScale = 10000; // 10000 times faster than real life
   let flyingSpeed = 10;
+  let rotationSpeed = 2.0; // for XR camera rotation
 
   // gui
   const gui = new GUI();
@@ -320,20 +335,53 @@ async function main() {
   let intersectedObject, intersectedPosition;
 
   function updateXRMovement(controller, delta) {
-    const thumbstick = handleThumbstick(controller);
+      const gamepad = controller.userData.gamepad;
+      const handedness = controller.userData.handedness;
 
-    if (thumbstick.x !== 0 || thumbstick.y !== 0) {
-      const moveVector = new THREE.Vector3(-thumbstick.x, 0, -thumbstick.y);
-      
-      const cameraQuaternion = camera.quaternion.clone();
-      const euler = new THREE.Euler().setFromQuaternion(cameraQuaternion, 'YXZ');
-      const yRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, euler.y, 0));
-      moveVector.applyQuaternion(yRotation);
+      if (!gamepad || handedness !== 'left') return;
 
-      moveVector.multiplyScalar(flyingSpeed * delta);
+      let x = gamepad.axes[2];
+      let z = gamepad.axes[3];
 
-      dolly.position.add(moveVector);
-    }
+      if (!x && !z) {
+          x = gamepad.axes[0];
+          z = gamepad.axes[1];
+      }
+
+      if (Math.abs(x) > 0.1 || Math.abs(z) > 0.1) {
+          const move = new THREE.Vector3(x, 0, z);
+
+          move.applyQuaternion(camera.quaternion);
+          
+          move.multiplyScalar(flyingSpeed * delta);
+
+          dolly.position.add(move);
+      }
+  }
+
+  function updateXRRotation(controller, delta) {
+      const gamepad = controller.userData.gamepad;
+      const handedness = controller.userData.handedness;
+
+      if (!gamepad || handedness !== 'right') return;
+
+      let x = gamepad.axes[2];
+      let y = gamepad.axes[3];
+
+      if (!x && !y && (gamepad.axes[0] || gamepad.axes[1])) {
+          x = gamepad.axes[0];
+          y = gamepad.axes[1];
+      }
+
+      if (Math.abs(x) > 0.1) {
+          dolly.rotateY(-x * rotationSpeed * delta);
+      }
+
+      if (Math.abs(y) > 0.1) {
+          dolly.rotateX(-y * rotationSpeed * delta);
+      }
+    
+      dolly.updateMatrix();
   }
 
   function animate() {
@@ -343,6 +391,11 @@ async function main() {
 
     // xr movement
     updateXRMovement(controller1, delta);
+    updateXRMovement(controller2, delta);
+
+    // xr rotation
+    updateXRRotation(controller1, delta);
+    updateXRRotation(controller2, delta);
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
@@ -409,11 +462,14 @@ async function main() {
       intersectedObject = intersects1[0].object;
       intersectedPosition = intersects1[0].point;
 
-      const laser1 = controller1.getObjectByName("laser");
-      if(laser1){
-          const positions = laser1.geometry.attributes.position.array;
-          positions[5] = -intersects1[0].distance;
-          laser1.geometry.attributes.position.needsUpdate = true;
+      const laser = controller1.getObjectByName("laser");
+      if (laser) {
+        const distance = intersects1[0].distance;
+        const positions = laser.geometry.attributes.position.array;
+        for (let i = 0; i <= 20; i++) {
+          positions[i*3 + 2] = - (i/20) * distance;
+        }
+        laser.geometry.attributes.position.needsUpdate = true;
       }
 
     } else {
@@ -431,11 +487,14 @@ async function main() {
       intersectedObject = intersects2[0].object;
       intersectedPosition = intersects2[0].point;
 
-      const laser2 = controller2.getObjectByName("laser");
-      if(laser2){
-          const positions = laser2.geometry.attributes.position.array;
-          positions[5] = -intersects1[0].distance;
-          laser2.geometry.attributes.position.needsUpdate = true;
+      const laser = controller2.getObjectByName("laser");
+      if (laser) {
+        const distance = intersects2[0].distance;
+        const positions = laser.geometry.attributes.position.array;
+        for (let i = 0; i <= 20; i++) {
+          positions[i*3 + 2] = - (i/20) * distance;
+        }
+        laser.geometry.attributes.position.needsUpdate = true;
       }
 
     } else {
