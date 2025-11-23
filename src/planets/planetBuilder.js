@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
 import { fetchPlanetData } from '../API/planetAPI.js';
 import { Planet } from './planet.js'
 import { Ring } from './planet.js';
@@ -34,77 +34,77 @@ export async function planetBuilder(sizeMultplier){
     const textureLoader = new THREE.TextureLoader();
     // sun
     const sunSizeMultplier = 0.000001; // scaling down the sun size (prevent sun from scaling over mercury orbit)
-    const textureSun = textureLoader.load('public/textures/sun.jpg');
+    const textureSun = textureLoader.load('sun.jpg');
     const { radius: sunRadius} = await fetchPlanetData("sun");
     const sunGeometry = new THREE.SphereGeometry(sunRadius * sunSizeMultplier, 64, 32);
     const sunMaterial = new THREE.MeshBasicMaterial({map: textureSun}); // use MeshBasicMaterial for sun to avoid lighting issues
     const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial)
 
     // mercury
-    const textureMercury = textureLoader.load('public/textures/mercury.jpg');
+    const textureMercury = textureLoader.load('mercury.jpg');
     const { radius: mercuryRadius } = await fetchPlanetData("mercury");
     const mercury = new Planet(mercuryRadius * sizeMultplier, textureMercury);
     const mercuryMesh = createPlanet(mercury);
 
     // venus
-    const textureVenus = textureLoader.load('public/textures/venus.jpg');
+    const textureVenus = textureLoader.load('venus.jpg');
     const { radius: venusRadius } = await fetchPlanetData("venus");
     const venus = new Planet(venusRadius * sizeMultplier, textureVenus);
     const venusMesh = createPlanet(venus);
 
     // earth
-    const textureEarth = textureLoader.load('public/textures/earth_day.jpg');
-    const textureEarthClouds = textureLoader.load('public/textures/earth_clouds.png');
+    const textureEarth = textureLoader.load('earth_day.jpg');
+    const textureEarthClouds = textureLoader.load('earth_clouds.png');
     const { radius: earthRadius } = await fetchPlanetData("earth");
     const earth = new Planet(earthRadius * sizeMultplier, textureEarth, null, textureEarthClouds);
     const earthMesh = createPlanet(earth);
 
     // moon
-    const textureMoon = textureLoader.load('public/textures/moon.jpg');
+    const textureMoon = textureLoader.load('moon.jpg');
     const { radius: moonRadius } = await fetchPlanetData("moon");
     const moon = new Planet(moonRadius * sizeMultplier, textureMoon);
     const moonMesh = createPlanet(moon);
     
     // mars
-    const textureMars = textureLoader.load('public/textures/mars.jpg');
+    const textureMars = textureLoader.load('mars.jpg');
     const { radius: marsRadius } = await fetchPlanetData("mars");
     const mars = new Planet(marsRadius * sizeMultplier, textureMars);
     const marsMesh = createPlanet(mars);
 
     // jupiter
-    const textureJupiter = textureLoader.load('public/textures/jupiter.jpg');
-    const textureJupiterRing = textureLoader.load('public/textures/jupiter_ring.png');
+    const textureJupiter = textureLoader.load('jupiter.jpg');
+    const textureJupiterRing = textureLoader.load('jupiter_ring.png');
     const { radius: jupiterRadius } = await fetchPlanetData("jupiter");
     const jupiterRing = new Ring(jupiterRadius * sizeMultplier * 1.29, jupiterRadius * sizeMultplier * 1.72, textureJupiterRing)
     const jupiter = new Planet(jupiterRadius * sizeMultplier, textureJupiter, jupiterRing);
     const jupiterMesh = createPlanet(jupiter);
 
     // saturn
-    const textureSaturn = textureLoader.load('public/textures/saturn.jpg');
-    const textureSaturnRing = textureLoader.load('public/textures/saturn_ring.png');
+    const textureSaturn = textureLoader.load('saturn.jpg');
+    const textureSaturnRing = textureLoader.load('saturn_ring.png');
     const { radius: saturnRadius } = await fetchPlanetData("saturn");
     const saturnRing = new Ring(saturnRadius * sizeMultplier * 1.15, saturnRadius * sizeMultplier * 2.4, textureSaturnRing)
     const saturn = new Planet(saturnRadius * sizeMultplier, textureSaturn, saturnRing);
     const saturnMesh = createPlanet(saturn);
 
     // uranus
-    const textureUranus = textureLoader.load('public/textures/uranus.jpg');
-    const textureUranusRing = textureLoader.load('public/textures/uranus_ring.png');
+    const textureUranus = textureLoader.load('uranus.jpg');
+    const textureUranusRing = textureLoader.load('uranus_ring.png');
     const { radius: uranusRadius } = await fetchPlanetData("uranus");
     const uranusRing = new Ring(uranusRadius * sizeMultplier * 1.5, uranusRadius * sizeMultplier * 2.0, textureUranusRing)
     const uranus = new Planet(uranusRadius * sizeMultplier, textureUranus, uranusRing);
     const uranusMesh = createPlanet(uranus);
 
     // neptune
-    const textureNeptune = textureLoader.load('public/textures/neptune.jpg');
-    const textureNeptuneRing = textureLoader.load('public/textures/neptune_ring.png');
+    const textureNeptune = textureLoader.load('neptune.jpg');
+    const textureNeptuneRing = textureLoader.load('neptune_ring.png');
     const { radius: neptuneRadius } = await fetchPlanetData("neptune");
     const neptuneRing = new Ring(neptuneRadius * sizeMultplier * 1.7, neptuneRadius * sizeMultplier * 2.56, textureNeptuneRing)
     const neptune = new Planet(neptuneRadius * sizeMultplier, textureNeptune, neptuneRing);
     const neptuneMesh = createPlanet(neptune);
 
     // pluto
-    const texturePluto = textureLoader.load('public/textures/pluto.jpg');
+    const texturePluto = textureLoader.load('pluto.jpg');
     const { radius: plutoRadius } = await fetchPlanetData("pluto");
     const pluto = new Planet(plutoRadius * sizeMultplier, texturePluto);
     const plutoMesh = createPlanet(pluto);

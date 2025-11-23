@@ -1,8 +1,9 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
-import { ARButton } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js";
-import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/VRButton.js";
-import { XRControllerModelFactory } from "./XR/XRControllerModelFactory.js";
-import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm";
+import * as THREE from "three";
+import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
+import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory.js';
+import GUI from 'lil-gui';
+import ThreeMeshUI from 'three-mesh-ui'
 import { initScene } from './core/initScene.js';
 import { planetBuilder } from './planets/planetBuilder.js';
 import { initPointerLockControls } from './controls/pointerLockControlsManager.js';
@@ -26,7 +27,7 @@ async function main() {
   scene.add(dolly);
 
   const controls = initPointerLockControls(camera, renderer);
-  scene.add(controls.getObject());
+  scene.add(controls.object);
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
@@ -83,18 +84,20 @@ async function main() {
     // laser pointer line
     switch (data.targetRayMode) {
       case 'tracked-pointer':
-        var geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, -5], 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute([0, 1, 1, 0, 0.5, 1], 3));
+        const geometry = new THREE.BufferGeometry();
+        const points = [ new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -5) ];
+        geometry.setFromPoints(points);
 
-        var material = new THREE.LineBasicMaterial({vertexColors: true, blending: THREE.AdditiveBlending, transparent: true});
+        const material = new THREE.LineBasicMaterial({color: 0x00ffff, blending: THREE.AdditiveBlending, transparent: true});
 
-        return new THREE.Line(geometry, material);
+        const line = new THREE.Line(geometry, material);
+        line.name = "laser";
+        return line;
 
       case 'gaze':
-        var geometry = new THREE.RingBufferGeometry(0.02, 0.04, 32).translate(0, 0, - 1);
-        var material = new THREE.MeshBasicMaterial({ opacity: 0.5, transparent: true});
-        return new THREE.Mesh(geometry, material);
+        const geo = new THREE.RingBufferGeometry(0.02, 0.04, 32).translate(0, 0, - 1);
+        const mat = new THREE.MeshBasicMaterial({ opacity: 0.5, transparent: true});
+        return new THREE.Mesh(geo, mat);
     }
   }
 
@@ -329,7 +332,7 @@ async function main() {
 
       moveVector.multiplyScalar(flyingSpeed * delta);
 
-      room.position.add(moveVector);
+      dolly.position.add(moveVector);
     }
   }
 
@@ -406,8 +409,12 @@ async function main() {
       intersectedObject = intersects1[0].object;
       intersectedPosition = intersects1[0].point;
 
-      // ToDo: do something to show that the intersectedObject is selected
-      // intersectedObject.rotation.y += .1;
+      const laser1 = controller1.getObjectByName("laser");
+      if(laser1){
+          const positions = laser1.geometry.attributes.position.array;
+          positions[5] = -intersects1[0].distance;
+          laser1.geometry.attributes.position.needsUpdate = true;
+      }
 
     } else {
       intersectedObject = undefined;
@@ -424,8 +431,12 @@ async function main() {
       intersectedObject = intersects2[0].object;
       intersectedPosition = intersects2[0].point;
 
-      // ToDo: do something to show that the intersectedObject is selected
-      // intersectedObject.rotation.y += .1;
+      const laser2 = controller2.getObjectByName("laser");
+      if(laser2){
+          const positions = laser2.geometry.attributes.position.array;
+          positions[5] = -intersects1[0].distance;
+          laser2.geometry.attributes.position.needsUpdate = true;
+      }
 
     } else {
       intersectedObject = undefined;

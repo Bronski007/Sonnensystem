@@ -10,7 +10,7 @@ Update: Now using local file bodies.json instead of API due to authorization/COR
 // Source: Bro Code - "How to FETCH data from an API using JavaScript" link: https://www.youtube.com/watch?v=37vxWr0WgQk
 export async function fetchPlanetData(planet){
     try {
-        const response = await fetch("API/bodies.json");
+        const response = await fetch("bodies.json");
         const data = await response.json();
         const planetData = data.bodies.find(p => p.id.toLowerCase() === planet.toLowerCase() || (p.englishName && p.englishName.toLowerCase() === planet.toLowerCase()));
 

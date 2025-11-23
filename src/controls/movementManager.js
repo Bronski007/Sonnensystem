@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
 
 
 /*
@@ -45,8 +45,8 @@ export function createMovementControls() {
     controls.moveRight(velocity.x);
     controls.moveForward(velocity.z);
 
-    if (move.up) controls.getObject().position.y += speed * delta;
-    if (move.down) controls.getObject().position.y -= speed * delta;
+    if (move.up) controls.object.position.y += speed * delta;
+    if (move.down) controls.object.position.y -= speed * delta;
   }
 
   return { update };
