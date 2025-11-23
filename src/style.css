@@ -4,9 +4,9 @@ html, body {
 }
 
 #ARButton {
-    margin-right: 20%;
+    left: 20px !important;
 }
 
 #VRButton {
-    margin-left: 20%;
+    left: 140px !important;
 }
