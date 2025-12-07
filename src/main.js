@@ -108,7 +108,7 @@ async function main() {
       const material = new THREE.LineBasicMaterial({vertexColors: true, transparent: true});
       const line = new THREE.Line(geometry, material);
       line.name = "laser";
-      line.position.set(0, 0, -0.04);
+      line.position.set(0, 0, -0.049);
       return line;
     }
   }
