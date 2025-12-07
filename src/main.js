@@ -11,19 +11,57 @@ import { createMovementControls } from './controls/movementManager.js';
 import { solarSystemBuilder } from './systems/solarSystem.js'
 import { TransitionManager } from './transitions/transitionManager.js';
 
+// npm run dev
+// npm run deploy
+
 // ToDo: add XR UI: https://github.com/felixmariotto/three-mesh-ui
 // https://github.com/felixmariotto/three-mesh-ui/blob/master/examples/interactive_button.js
-
-// ToDo: fix planet positions
-// ToDo: fix XR camera movement
 
 async function main() {
   //initialise scene
   const { scene, camera, renderer } = initScene();
 
+  let xrmode = "";
   // XR buttons
-  document.body.appendChild(ARButton.createButton(renderer))
-  document.body.appendChild(VRButton.createButton(renderer))
+  const arButton = ARButton.createButton(renderer);
+  const vrButton = VRButton.createButton(renderer);
+  
+  arButton.addEventListener("pointerdown", function() {
+    xrmode = "ar";
+  });
+  vrButton.addEventListener("pointerdown", function() {
+    xrmode = "vr";
+  });
+
+  renderer.xr.addEventListener("sessionstart", function() {
+    if (xrmode === "ar") {
+      hideStars();
+      hideControllers(0);
+      hideControllers(1);
+      vrButton.style.display = 'none';
+    }
+
+    if (xrmode === "vr") {
+      showStars();
+      showControllers(0);
+      showControllers(1);
+      arButton.style.display = 'none';
+    }
+
+    hideGUI();
+  })
+
+  renderer.xr.addEventListener("sessionend", function() {
+    showStars();
+    hideControllers(0);
+    hideControllers(1);
+    showGUI();
+    vrButton.style.display = 'block';
+    arButton.style.display = 'block';
+  })
+  
+  document.body.appendChild(arButton)
+  document.body.appendChild(vrButton)
 
   const controls = initPointerLockControls(camera, renderer);
 
@@ -37,15 +75,15 @@ async function main() {
 
   // handle controller inputs
   function onSelectStart() {
-    // ToDo: Add code for when user presses their controller (Zoom in?)
+    // ToDo: Add code for when user presses their controller (Info about selected planet?)
   }
 
   function onSelectEnd() {
-    // ToDo: Add code for when user releases the button on their controller (Zoom out?)
+    // ToDo: Add code for when user releases the button on their controller
   }
 
   // add laser to controllers
-  function buildController(data, segments = 20) {
+  function buildController(data, segments = 128) {
     if (data.targetRayMode == 'tracked-pointer') {
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array((segments + 1) * 3);
@@ -70,15 +108,16 @@ async function main() {
       const material = new THREE.LineBasicMaterial({vertexColors: true, transparent: true});
       const line = new THREE.Line(geometry, material);
       line.name = "laser";
+      line.position.set(0, 0, -0.04);
       return line;
     }
   }
 
   // controller set up
   function setupController(controllerIndex) {
-    // show controller models in XR
-    const controllerModelFactory = new XRControllerModelFactory();
+    // show controller models in VR
     const controllerGrip = renderer.xr.getControllerGrip(controllerIndex);
+    const controllerModelFactory = new XRControllerModelFactory();
     const model = controllerModelFactory.createControllerModel(controllerGrip);
     controllerGrip.add(model);
     dolly.add(controllerGrip);
@@ -101,6 +140,14 @@ async function main() {
     return controller;
   }
 
+  function showControllers(controllerIndex) {
+    renderer.xr.getControllerGrip(controllerIndex).children.forEach(child => child.visible = true);
+  }
+
+  function hideControllers(controllerIndex) {
+    renderer.xr.getControllerGrip(controllerIndex).children.forEach(child => child.visible = false);
+  }
+
   const controller1 = setupController(0);
   const controller2 = setupController(1);
 
@@ -121,6 +168,15 @@ async function main() {
   const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1 });
   const starField = new THREE.Points(starsGeometry, starsMaterial);
   scene.add(starField);
+
+  function showStars() {
+    starField.visible = true;
+  }
+
+  function hideStars() {
+    starField.visible = false;
+  }
+
 
   // create planet meshes and orbits
   const { meshes } = await planetBuilder(0.00001);
@@ -204,10 +260,9 @@ async function main() {
 
   const lunarCtrl = gui.add(params, 'showLunarEclipse').name('Show Lunar Eclipse').listen();
   const solarCtrl = gui.add(params, 'showSolarEclipse').name('Show Solar Eclipse').listen();
-
-  let simulationTime = 0; // stores the elapsed time to quickly jump to eclipses
+  
   let savedTimeScale = timeScale;
-
+  let simulationTime = 0; // stores the elapsed time to quickly jump to eclipses
   let transition = null;
 
   // listeners for Solar/Lunar eclipses
@@ -287,9 +342,17 @@ async function main() {
     }
   });
 
+  function hideGUI() {
+    gui.hide()
+  }
+
+  function showGUI() {
+    gui.show()
+  }
+
   // moon orbit line
   const geometry = new THREE.BufferGeometry();
-  const points = new Float32Array((128 + 1) * 3);
+  const points = new Float32Array((256 + 1) * 3);
   geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
   const material = new THREE.LineBasicMaterial({ color: 0xffffff });
   const moonOrbitLine = new THREE.LineLoop(geometry, material);
@@ -299,9 +362,8 @@ async function main() {
   // XR camera movement
   function updateXRMovement(controller, delta) {
       const gamepad = controller.userData.gamepad;
-      const handedness = controller.userData.handedness;
 
-      if (!gamepad || handedness !== 'left') return;
+      if (!gamepad) return;
 
       let x = gamepad.axes[2]; // horizontal
       let z = gamepad.axes[3]; // vertical
@@ -313,78 +375,68 @@ async function main() {
       }
 
       if (Math.abs(x) > 0.1 || Math.abs(z) > 0.1) { // deadzone
-          const move = new THREE.Vector3(x, 0, z);
+        const move = new THREE.Vector3(x, 0, z);
 
-          move.applyQuaternion(camera.quaternion);
-          
-          move.multiplyScalar(flyingSpeed * delta);
+        const direction = move.clone().applyQuaternion(camera.quaternion);
+        direction.normalize().multiplyScalar(flyingSpeed * delta);
 
-          dolly.position.add(move);
+        dolly.position.add(direction);
       }
   }
 
-  // XR camera rotation
-  function updateXRRotation(controller, delta) {
-      const gamepad = controller.userData.gamepad;
-      const handedness = controller.userData.handedness;
-
-      if (!gamepad || handedness !== 'right') return;
-
-      let x = gamepad.axes[2]; // horizontal
-      let y = gamepad.axes[3]; // vertical
-
-      // fallback
-      if (!x && !y) {
-          x = gamepad.axes[0];
-          y = gamepad.axes[1];
-      }
-
-      if (Math.abs(x) > 0.1) { // deadzone
-          dolly.rotateY(-x * rotationSpeed * delta);
-      }
-
-      if (Math.abs(y) > 0.1) { // deadzone
-          dolly.rotateX(-y * rotationSpeed * delta);
-      }
-    
-      dolly.updateMatrix();
-  }
-
-  const room = new THREE.Group(); // group for all planets
-  room.add(meshes.sun);
-  room.add(meshes.mercury);
-  room.add(meshes.venus);
-  room.add(meshes.earth);
-  room.add(meshes.moon);
-  room.add(meshes.mars);
-  room.add(meshes.jupiter);
-  room.add(meshes.saturn);
-  room.add(meshes.uranus);
-  room.add(meshes.neptune);
-  room.add(meshes.pluto);
-  scene.add(room);
+  const planetMeshes = Object.values(meshes);
   let tempMatrix = new THREE.Matrix4();
   const raycaster = new THREE.Raycaster();
-  // dynamically adjust length of XR controller laser
-  function updateControllerLaser(controller) {
+
+  // dynamically adjust length and color of XR controller laser
+  function updateControllerLaser(controller, delta) {
     tempMatrix.identity().extractRotation(controller.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     raycaster.ray.direction.set(0, 0, - 1).applyMatrix4(tempMatrix);
 
-    var intersects = raycaster.intersectObjects(room.children); // get intersections of laser with objects
+    const intersects = raycaster.intersectObjects(planetMeshes, false);
+
+    const laser = controller.getObjectByName("laser");
+    if (!laser) return;
+
+    const positions = laser.geometry.attributes.position.array;
+    const colors = laser.geometry.attributes.color.array;
+    const segments = positions.length / 3 - 1;
+
+    let defaultDistance = 5; // default max laser length
+    let targetDistance = defaultDistance;
+    let hitColor = 0x00ffff; // default cyan
 
     if (intersects.length > 0) {
-      const laser = controller.getObjectByName("laser");
-      if (laser) {
-        const distance = intersects[0].distance; // distance to nearest intersecting object
-        const positions = laser.geometry.attributes.position.array;
-        const segments = positions.length / 3 - 1;
-        for (let i = 0; i <= segments; i++) {
-          positions[i*3 + 2] = - (i / segments) * distance; // change z for each laser line point
+        const hit = intersects[0];
+        const distanceToRay = hit.point.distanceTo(raycaster.ray.origin);
+        
+        if (Math.abs(distanceToRay - hit.distance) < 0.01) {
+            targetDistance = hit.distance;
+            hitColor = 0xff0000; // red laser when hit detected
         }
-        laser.geometry.attributes.position.needsUpdate = true;
-      }
     }
+
+    if (!laser.userData.currentColor) laser.userData.currentColor = new THREE.Color(0x00ffff);
+    laser.userData.currentColor.lerp(new THREE.Color(hitColor), 0.06); // smooth transition
+
+    if (laser.userData.currentDistance === undefined) laser.userData.currentDistance = defaultDistance;
+    laser.userData.currentDistance += (targetDistance - laser.userData.currentDistance) * Math.min(5.0 * delta, 1);
+
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      positions[i*3 + 2] = -t * laser.userData.currentDistance;;
+
+      // update fade dynamically
+      colors[i*4 + 3] = 1 - t; 
+
+      colors[i*4 + 0] = laser.userData.currentColor.r;
+      colors[i*4 + 1] = laser.userData.currentColor.g;
+      colors[i*4 + 2] = laser.userData.currentColor.b;
+    }
+
+    laser.geometry.attributes.position.needsUpdate = true;
+    laser.geometry.attributes.color.needsUpdate = true;
   }
 
   function animate() {
@@ -396,13 +448,9 @@ async function main() {
     updateXRMovement(controller1, delta);
     updateXRMovement(controller2, delta);
 
-    // xr rotation
-    updateXRRotation(controller1, delta);
-    updateXRRotation(controller2, delta);
-
     // xr raycasting
-    updateControllerLaser(controller1);
-    updateControllerLaser(controller2);
+    updateControllerLaser(controller1, delta);
+    updateControllerLaser(controller2, delta);
 
     // rotation of planets around the sun
     for (const [name, params] of Object.entries(orbitParams)) {
@@ -419,7 +467,7 @@ async function main() {
         mesh.position.set(earthPos.x + x, earthPos.y, earthPos.z + z);
 
         // moon orbit line
-        const segments = 128;
+        const segments = 256;
         const positions = moonOrbitLine.geometry.attributes.position.array;
         for (let i = 0; i <= segments; i++) {
           const angle = (i / segments) * 2 * Math.PI;

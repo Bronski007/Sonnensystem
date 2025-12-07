@@ -17,6 +17,7 @@ export function initScene() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer shadows
   renderer.xr.enabled = true;
+  renderer.xr.setFramebufferScaleFactor(1.5);
   document.body.appendChild(renderer.domElement);
 
   return { scene, camera, renderer };
