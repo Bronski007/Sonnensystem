@@ -14,9 +14,6 @@ import { TransitionManager } from './transitions/transitionManager.js';
 // npm run dev
 // npm run deploy
 
-// ToDo: add XR UI: https://github.com/felixmariotto/three-mesh-ui
-// https://github.com/felixmariotto/three-mesh-ui/blob/master/examples/interactive_button.js
-
 async function main() {
   //initialise scene
   const { scene, camera, renderer } = initScene();
@@ -49,6 +46,7 @@ async function main() {
     }
 
     hideGUI();
+    showThreeMeshUI();
   })
 
   renderer.xr.addEventListener("sessionend", function() {
@@ -56,6 +54,7 @@ async function main() {
     hideControllers(0);
     hideControllers(1);
     showGUI();
+    hideThreeMeshUI();
     vrButton.style.display = 'block';
     arButton.style.display = 'block';
   })
@@ -73,13 +72,127 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
+  // ThreeMeshUI
+  let container = null;
+  let uiVisible = false;
+  const uiOffset = new THREE.Vector3(0, 0.15, -0.25);
+
+  function showThreeMeshUI() {
+    if (container === null) {
+
+      container = new ThreeMeshUI.Block({
+        padding: 0.2,
+        borderRadius: 0.11,
+        fontSize: 0.07,
+        fontFamily: 'saira.json',
+        fontTexture: 'saira.png',
+        justifyContent: 'center',
+        contentDirection: 'row-reverse' // orient buttons horizontally
+      });
+  
+      container.position.set(0, 0, 0);
+      container.rotation.x = -0.55;
+  
+      // buttons
+      const buttonOptions = {
+        width: 0.4,
+        height: 0.15,
+        justifyContent: 'center',
+        offset: 0.05,
+        margin: 0.02,
+        borderRadius: 0.075
+      }
+  
+      const hoveredStateAttributes = {
+        state: 'hovered',
+        attributes: {
+          offset: 0.035,
+          backgroundColor: new THREE.Color(0x999999),
+          backgroundOpacity: 1,
+          fontColor: new THREE.Color(0xffffff)
+        },
+      };
+  
+      const idleStateAttributes = {
+        state: 'idle',
+        attributes: {
+          offset: 0.035,
+          backgroundColor: new THREE.Color(0x666666),
+          backgroundOpacity: 0.3,
+          fontColor: new THREE.Color(0xffffff)
+        },
+      };
+  
+      const buttonNext = new ThreeMeshUI.Block(buttonOptions);
+      const buttonPrevious = new ThreeMeshUI.Block(buttonOptions);
+  
+      buttonNext.add(new ThreeMeshUI.Text({content:"next"}))
+      buttonPrevious.add(new ThreeMeshUI.Text({content:"previous"}))
+  
+      const selectedAttributes = {
+        offset: 0.02,
+        backgroundColor: new THREE.Color(0x777777),
+        fontColor: new THREE.Color(0x222222)
+      };
+  
+      buttonNext.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          console.log("Hallo"); // ToDo (port Gui to ThreeMeshUI)
+        }
+      } );
+      buttonNext.setupState(hoveredStateAttributes);
+      buttonNext.setupState(idleStateAttributes);
+  
+      buttonPrevious.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          console.log("Welt!"); // ToDo
+        }
+      } );
+      buttonPrevious.setupState(hoveredStateAttributes);
+      buttonPrevious.setupState(idleStateAttributes);
+  
+      const hitboxNext = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxNext.userData = {type: "ui", ui: buttonNext};
+      buttonNext.add(hitboxNext);
+  
+      const hitboxPrevious = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxPrevious.userData = {type: "ui", ui: buttonPrevious};
+      buttonPrevious.add(hitboxPrevious);
+  
+      raycastTargets.push(hitboxNext, hitboxPrevious)
+      container.add(buttonNext, buttonPrevious);
+      scene.add(container);
+      uiVisible = true;
+    } else {
+      container.visible = true;
+      uiVisible = true;
+    }
+  }
+
+  function hideThreeMeshUI() {
+    if (container != null) {
+      container.visible = false;
+      uiVisible = false;
+    }
+  }
+
+  let isSelected = false;
+  let hoveredUI = null;
   // handle controller inputs
   function onSelectStart() {
-    // ToDo: Add code for when user presses their controller (Info about selected planet?)
+    isSelected = true;
   }
 
   function onSelectEnd() {
-    // ToDo: Add code for when user releases the button on their controller
+    if (hoveredUI) {
+      hoveredUI.setState("selected");
+      hoveredUI = null;
+    }
+    isSelected = false;
   }
 
   // add laser to controllers
@@ -229,7 +342,6 @@ async function main() {
   // default values
   let timeScale = 10000; // 10000 times faster than real life
   let flyingSpeed = 10;
-  let rotationSpeed = 2.0; // for XR camera rotation
 
   // gui
   const gui = new GUI();
@@ -384,7 +496,20 @@ async function main() {
       }
   }
 
-  const planetMeshes = Object.values(meshes);
+  function updateXRInput() {
+    const gamepad = controller1.userData.gamepad;
+    if (!gamepad) return;
+
+    if (gamepad.buttons[4]?.pressed && !controller1.userData.optionPressed) { // option button
+      controller1.userData.optionPressed = true;
+      if (uiVisible) hideThreeMeshUI();
+      else showThreeMeshUI();
+    } else if (!gamepad.buttons[4]?.pressed) {
+      controller1.userData.optionPressed = false;
+    }
+  }
+
+  let raycastTargets = Object.values(meshes);
   let tempMatrix = new THREE.Matrix4();
   const raycaster = new THREE.Raycaster();
 
@@ -394,7 +519,7 @@ async function main() {
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     raycaster.ray.direction.set(0, 0, - 1).applyMatrix4(tempMatrix);
 
-    const intersects = raycaster.intersectObjects(planetMeshes, false);
+    const intersects = raycaster.intersectObjects(raycastTargets, false);
 
     const laser = controller.getObjectByName("laser");
     if (!laser) return;
@@ -415,7 +540,40 @@ async function main() {
             targetDistance = hit.distance;
             hitColor = 0xff0000; // red laser when hit detected
         }
-    }
+
+        switch(hit.object.userData.type) {
+          case "ui": {
+            const ui = hit.object.userData.ui;
+            if (!ui) return;
+
+            hoveredUI = ui;
+            ui.setState("hovered");
+    
+            raycastTargets.forEach(
+              (obj) => {
+                if (obj.userData.type === "ui" && obj !== hit.object) {
+                  obj.userData.ui.setState("idle");
+                }
+              }
+            );
+            break;
+          }
+          
+          case "planet": {
+            // ToDo (do sth when the user clicks on a planet)
+            break;
+          }
+        }
+      }
+
+      if (intersects.length === 0) {
+        raycastTargets.forEach(obj => {
+          if (obj.userData.type === "ui") {
+            obj.userData.ui.setState("idle");
+          }
+        });
+        hoveredUI = null;
+      }
 
     if (!laser.userData.currentColor) laser.userData.currentColor = new THREE.Color(0x00ffff);
     laser.userData.currentColor.lerp(new THREE.Color(hitColor), 0.06); // smooth transition
@@ -443,6 +601,16 @@ async function main() {
     const delta = clock.getDelta();
     simulationTime += delta * timeScale;
     movementControls.update(controls, delta, flyingSpeed);
+    ThreeMeshUI.update();
+
+    // ThreeMeshUI hovering over left controller
+    if (container && controller1 && uiVisible) {
+      container.position.copy(controller1.position).add(uiOffset.clone().applyQuaternion(controller1.quaternion));
+      container.quaternion.copy(controller1.quaternion);
+    }
+
+    // xr input
+    updateXRInput();
 
     // xr movement
     updateXRMovement(controller1, delta);
