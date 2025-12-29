@@ -89,7 +89,7 @@ async function main() {
 
   function createStatusPanel() {
     statusText = new ThreeMeshUI.Text({
-      content: '',
+      content: 'Solar System',
       fontSize: 0.006
     });
 
@@ -107,18 +107,12 @@ async function main() {
 	  });
 
     statusPanel.add(statusText);
-    statusPanel.visible = false;
 
     return statusPanel;
   }
 
   function showStatus(text) {
     statusText.set({ content: text });
-    statusPanel.visible = true;
-  }
-
-  function hideStatus() {
-    if (statusPanel) statusPanel.visible = false;
   }
 
   function makeHoverState(textFn) {
@@ -180,7 +174,7 @@ async function main() {
           backgroundOpacity: 0.3,
           fontColor: new THREE.Color(0xffffff)
         },
-        onSet: hideStatus
+        onSet: () => showStatus(`Solar System`)
       };
   
       const buttonIncreaseTimeScale = new ThreeMeshUI.Block(buttonOptions);
@@ -218,9 +212,9 @@ async function main() {
           if (timeScale < 10000) {
             timeScale = 10000;
           } else if (timeScale < 100000) {
-            timeScale = Math.ceil(timeScale / 10000) * 10000;
+            timeScale = Math.ceil((timeScale + 0.01) / 10000) * 10000;
           } else {
-            timeScale = Math.ceil(timeScale / 50000) * 50000;
+            timeScale = Math.ceil((timeScale + 0.01) / 50000) * 50000;
           }
 
           showStatus(`Time Scale ${timeScale.toString().replace(".", " ")}`);
@@ -236,9 +230,9 @@ async function main() {
           if (timeScale <= 10000) {
             timeScale = 1;
           } else if (timeScale <= 100000) {
-            timeScale = Math.floor(timeScale / 10000) * 10000;
+            timeScale = Math.floor((timeScale - 0.01) / 10000) * 10000;
           } else {
-            timeScale = Math.floor(timeScale / 50000) * 50000;
+            timeScale = Math.floor((timeScale - 0.01) / 50000) * 50000;
           }
 
           showStatus(`Time Scale ${timeScale.toString().replace(".", " ")}`);
@@ -255,11 +249,11 @@ async function main() {
             flyingSpeed = 0.1;
           }
           else if (flyingSpeed < 1) {
-            flyingSpeed = Math.ceil(flyingSpeed / 0.1) * 0.1;
+            flyingSpeed = Math.ceil((flyingSpeed + 0.01) / 0.1) * 0.1;
           } else if (flyingSpeed < 10) {
-            flyingSpeed = Math.ceil(flyingSpeed / 1) * 1;
+            flyingSpeed = Math.ceil((flyingSpeed + 0.01) / 1) * 1;
           } else {
-            flyingSpeed = Math.ceil(flyingSpeed / 5) * 5;
+            flyingSpeed = Math.ceil((flyingSpeed + 0.01) / 5) * 5;
           }
 
           showStatus(`Flying Speed ${flyingSpeed.toString().replace(".", " ")}`);
@@ -275,11 +269,11 @@ async function main() {
           if (flyingSpeed <= 0.1) {
             flyingSpeed = 0.1;
           } else if (flyingSpeed <= 1) {
-            flyingSpeed = Math.floor(flyingSpeed / 0.1) * 0.1;
+            flyingSpeed = Math.floor((flyingSpeed - 0.01) / 0.1) * 0.1;
           } else if (flyingSpeed <= 10) {
-            flyingSpeed = Math.floor(flyingSpeed / 1) * 1;
+            flyingSpeed = Math.floor((flyingSpeed - 0.01) / 1) * 1;
           } else {
-            flyingSpeed = Math.floor(flyingSpeed / 5) * 5;
+            flyingSpeed = Math.floor((flyingSpeed - 0.01) / 5) * 5;
           }
 
           showStatus(`Flying Speed ${flyingSpeed.toString().replace(".", " ")}`);
@@ -321,11 +315,11 @@ async function main() {
           let value = Object.values(planetOutlines)[0].scale.x + 1;
 
           if (value < 1) {
-            value = 1;
+            value = 1.01;
           } else if (value < 10) {
-            value = Math.ceil(value / 1) * 1;
+            value = Math.ceil((value + 0.01) / 1) * 1;
           } else {
-            value = Math.ceil(value / 5) * 5;
+            value = Math.ceil((value + 0.01) / 5) * 5;
           }
 
           Object.values(planetOutlines).forEach(outline => {outline.scale.set(value, value, value);});
@@ -343,11 +337,11 @@ async function main() {
           let value = Object.values(planetOutlines)[0].scale.x - 1;
 
           if (value <= 1) {
-            value = 1;
+            value = 1.01;
           } else if (value <= 10) {
-            value = Math.floor(value / 1) * 1;
+            value = Math.floor((value - 0.01) / 1) * 1;
           } else {
-            value = Math.floor(value / 5) * 5;
+            value = Math.floor((value - 0.01) / 5) * 5;
           } 
 
           Object.values(planetOutlines).forEach(outline => {outline.scale.set(value, value, value);});
@@ -364,6 +358,8 @@ async function main() {
         onSet: () => {
           showLunarEclipse(!lunarEclipseVisible);
           lunarEclipseVisible = !lunarEclipseVisible;
+          showSolarEclipse(false);
+          solarEclipseVisible = false;
        
           showStatus(lunarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
         }
@@ -377,6 +373,8 @@ async function main() {
         onSet: () => {
           showSolarEclipse(!solarEclipseVisible);
           solarEclipseVisible = !solarEclipseVisible;
+          showLunarEclipse(false);
+          lunarEclipseVisible = false;
         
           showStatus(solarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
         }
@@ -441,13 +439,19 @@ async function main() {
       container.add(row1, row2, row3, row4, row5);
       
       controller1.add(container);
-      container.position.copy(new THREE.Vector3(-0.05, 0.125, -0.0125));
+      container.position.copy(new THREE.Vector3(-0.075, 0.125, -0.04));
       container.rotation.set(0, 1.5, 0);
 
       uiVisible = true;
     } else {
       container.visible = true;
       uiVisible = true;
+
+      container.traverse((child) => {
+        if (child.userData.type === "ui") {
+          raycastTargets.push(child);
+        }
+      });
     }
   }
 
@@ -456,6 +460,8 @@ async function main() {
       container.visible = false;
       uiVisible = false;
     }
+
+    raycastTargets = raycastTargets.filter(obj => obj.userData.type !== "ui");
   }
 
   let isSelected = false;
