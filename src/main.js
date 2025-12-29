@@ -249,7 +249,7 @@ async function main() {
             flyingSpeed = 0.1;
           }
           else if (flyingSpeed < 1) {
-            flyingSpeed = Math.ceil((flyingSpeed + 0.01) / 0.1) * 0.1;
+            flyingSpeed = Number((Math.ceil((flyingSpeed + 0.01) / 0.1) * 0.1).toFixed(1));
           } else if (flyingSpeed < 10) {
             flyingSpeed = Math.ceil((flyingSpeed + 0.01) / 1) * 1;
           } else {
@@ -269,7 +269,7 @@ async function main() {
           if (flyingSpeed <= 0.1) {
             flyingSpeed = 0.1;
           } else if (flyingSpeed <= 1) {
-            flyingSpeed = Math.floor((flyingSpeed - 0.01) / 0.1) * 0.1;
+            flyingSpeed = Number((Math.floor((flyingSpeed - 0.01) / 0.1) * 0.1).toFixed(1));
           } else if (flyingSpeed <= 10) {
             flyingSpeed = Math.floor((flyingSpeed - 0.01) / 1) * 1;
           } else {
@@ -312,7 +312,10 @@ async function main() {
         state: 'selected',
         attributes: selectedAttributes,
         onSet: () => {
-          let value = Object.values(planetOutlines)[0].scale.x + 1;
+          let value = Object.values(planetOutlines)[0].scale.x;
+
+          let step = value < 1 ? 0.01 : value < 10 ? 0.1 : 1;
+          value += step;
 
           if (value < 1) {
             value = 1.01;
@@ -336,7 +339,10 @@ async function main() {
         onSet: () => {
           let value = Object.values(planetOutlines)[0].scale.x - 1;
 
-          if (value <= 1) {
+          let step = value <= 1 ? 0.01 : value <= 10 ? 0.1 : 1;
+          value += step;
+
+          if (value <= 1.01) {
             value = 1.01;
           } else if (value <= 10) {
             value = Math.floor((value - 0.01) / 1) * 1;
@@ -358,7 +364,6 @@ async function main() {
         onSet: () => {
           showLunarEclipse(!lunarEclipseVisible);
           lunarEclipseVisible = !lunarEclipseVisible;
-          showSolarEclipse(false);
           solarEclipseVisible = false;
        
           showStatus(lunarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
@@ -373,7 +378,6 @@ async function main() {
         onSet: () => {
           showSolarEclipse(!solarEclipseVisible);
           solarEclipseVisible = !solarEclipseVisible;
-          showLunarEclipse(false);
           lunarEclipseVisible = false;
         
           showStatus(solarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
