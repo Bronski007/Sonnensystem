@@ -72,62 +72,138 @@ async function main() {
   const movementControls = createMovementControls();
   const clock = new THREE.Clock();
 
+  // default values
+  let timeScale = 10000; // 10000 times faster than real life
+  let flyingSpeed = 10;
+  let orbitLinesVisible = true;
+  let planetaryOutlinesVisible = false;
+  let lunarEclipseVisible = false;
+  let solarEclipseVisible = false;
+
   // ThreeMeshUI
   let container = null;
   let uiVisible = false;
-  const uiOffset = new THREE.Vector3(0, 0.15, -0.25);
+
+  let statusPanel = null;
+  let statusText = null;
+
+  function createStatusPanel() {
+    statusText = new ThreeMeshUI.Text({
+      content: '',
+      fontSize: 0.006
+    });
+
+    statusPanel = new ThreeMeshUI.Block({
+      textAlign: 'center',
+      padding: 0.01,
+      fontFamily: 'saira.json',
+      fontTexture: 'saira.png',
+      justifyContent: 'center',
+      width: 0.11,
+      height: 0.03,
+      offset: 0.005,
+      margin: 0.002,
+      borderRadius: 0.0075
+	  });
+
+    statusPanel.add(statusText);
+    statusPanel.visible = false;
+
+    return statusPanel;
+  }
+
+  function showStatus(text) {
+    statusText.set({ content: text });
+    statusPanel.visible = true;
+  }
+
+  function hideStatus() {
+    if (statusPanel) statusPanel.visible = false;
+  }
+
+  function makeHoverState(textFn) {
+    return {
+      state: 'hovered',
+      attributes: {
+        offset: 0,
+        backgroundColor: new THREE.Color(0x999999),
+        backgroundOpacity: 1,
+        fontColor: new THREE.Color(0xffffff)
+      },
+      onSet: () => {
+        showStatus(textFn());
+      }
+    };
+  }
+
+  function createRow() {
+    return new ThreeMeshUI.Block({
+      contentDirection: 'row',
+      justifyContent: 'center',
+      columnGap: 0.005
+    });
+  }
 
   function showThreeMeshUI() {
     if (container === null) {
 
       container = new ThreeMeshUI.Block({
-        padding: 0.2,
-        borderRadius: 0.11,
-        fontSize: 0.07,
+        padding: 0.01,
+        borderRadius: 0.011,
+        fontSize: 0.006,
         fontFamily: 'saira.json',
         fontTexture: 'saira.png',
         justifyContent: 'center',
-        contentDirection: 'row-reverse' // orient buttons horizontally
+        contentDirection: 'column',
+        rowGap: 0.005
       });
-  
-      container.position.set(0, 0, 0);
-      container.rotation.x = -0.55;
+
+      statusPanel = createStatusPanel();
+      container.add(statusPanel);
+      statusPanel.position.set(0, 0.115, 0);
   
       // buttons
       const buttonOptions = {
-        width: 0.4,
-        height: 0.15,
+        width: 0.11,
+        height: 0.03,
         justifyContent: 'center',
-        offset: 0.05,
-        margin: 0.02,
-        borderRadius: 0.075
-      }
-  
-      const hoveredStateAttributes = {
-        state: 'hovered',
-        attributes: {
-          offset: 0.035,
-          backgroundColor: new THREE.Color(0x999999),
-          backgroundOpacity: 1,
-          fontColor: new THREE.Color(0xffffff)
-        },
+        offset: 0.005,
+        margin: 0.002,
+        borderRadius: 0.0075
       };
   
       const idleStateAttributes = {
         state: 'idle',
         attributes: {
-          offset: 0.035,
+          offset: 0,
           backgroundColor: new THREE.Color(0x666666),
           backgroundOpacity: 0.3,
           fontColor: new THREE.Color(0xffffff)
         },
+        onSet: hideStatus
       };
   
-      const buttonNext = new ThreeMeshUI.Block(buttonOptions);
-      const buttonPrevious = new ThreeMeshUI.Block(buttonOptions);
+      const buttonIncreaseTimeScale = new ThreeMeshUI.Block(buttonOptions);
+      const buttonDecreaseTimeScale = new ThreeMeshUI.Block(buttonOptions);
+      const buttonIncreaseFlyingSpeed = new ThreeMeshUI.Block(buttonOptions);
+      const buttonDecreaseFlyingSpeed = new ThreeMeshUI.Block(buttonOptions);
+      const buttonShowOrbits = new ThreeMeshUI.Block(buttonOptions);
+      const buttonShowPlanetaryOutlines = new ThreeMeshUI.Block(buttonOptions);
+      const buttonIncreasePlanetaryOutlineScale = new ThreeMeshUI.Block(buttonOptions);
+      const buttonDecreasePlanetaryOutlineScale = new ThreeMeshUI.Block(buttonOptions);
+      const buttonShowLunarEclipse = new ThreeMeshUI.Block(buttonOptions);
+      const buttonShowSolarEclipse = new ThreeMeshUI.Block(buttonOptions);
   
-      buttonNext.add(new ThreeMeshUI.Text({content:"next"}))
-      buttonPrevious.add(new ThreeMeshUI.Text({content:"previous"}))
+      buttonIncreaseTimeScale.add(new ThreeMeshUI.Text({content:"Increase Time Scale"}))
+      buttonDecreaseTimeScale.add(new ThreeMeshUI.Text({content:"Decrease Time Scale"}))
+      buttonIncreaseFlyingSpeed.add(new ThreeMeshUI.Text({content:"Increase Flying Speed"}))
+      buttonDecreaseFlyingSpeed.add(new ThreeMeshUI.Text({content:"Decrease Flying Speed"}))
+      buttonShowOrbits.add(new ThreeMeshUI.Text({content:"Toggle Orbits"}))
+      buttonShowPlanetaryOutlines.add(new ThreeMeshUI.Text({content:"Toggle Planetary Outlines"}))
+      buttonIncreasePlanetaryOutlineScale.add(new ThreeMeshUI.Text({content:"Increase Planetary Outlines Scale"}))
+      buttonDecreasePlanetaryOutlineScale.add(new ThreeMeshUI.Text({content:"Decrease Planetary Outlines Scale"}))
+      buttonShowLunarEclipse.add(new ThreeMeshUI.Text({content:"Toggle Lunar Eclipse"}))
+      buttonShowSolarEclipse.add(new ThreeMeshUI.Text({content:"Toggle Solar Eclipse"}))
   
       const selectedAttributes = {
         offset: 0.02,
@@ -135,37 +211,239 @@ async function main() {
         fontColor: new THREE.Color(0x222222)
       };
   
-      buttonNext.setupState( {
+      buttonIncreaseTimeScale.setupState( {
         state: 'selected',
         attributes: selectedAttributes,
         onSet: () => {
-          console.log("Hallo"); // ToDo (port Gui to ThreeMeshUI)
+          if (timeScale < 10000) {
+            timeScale = 10000;
+          } else if (timeScale < 100000) {
+            timeScale = Math.ceil(timeScale / 10000) * 10000;
+          } else {
+            timeScale = Math.ceil(timeScale / 50000) * 50000;
+          }
+
+          showStatus(`Time Scale ${timeScale.toString().replace(".", " ")}`);
         }
       } );
-      buttonNext.setupState(hoveredStateAttributes);
-      buttonNext.setupState(idleStateAttributes);
+      buttonIncreaseTimeScale.setupState(makeHoverState(() => `Time Scale ${timeScale.toString().replace(".", " ")}`));
+      buttonIncreaseTimeScale.setupState(idleStateAttributes);
   
-      buttonPrevious.setupState( {
+      buttonDecreaseTimeScale.setupState( {
         state: 'selected',
         attributes: selectedAttributes,
         onSet: () => {
-          console.log("Welt!"); // ToDo
+          if (timeScale <= 10000) {
+            timeScale = 1;
+          } else if (timeScale <= 100000) {
+            timeScale = Math.floor(timeScale / 10000) * 10000;
+          } else {
+            timeScale = Math.floor(timeScale / 50000) * 50000;
+          }
+
+          showStatus(`Time Scale ${timeScale.toString().replace(".", " ")}`);
         }
       } );
-      buttonPrevious.setupState(hoveredStateAttributes);
-      buttonPrevious.setupState(idleStateAttributes);
+      buttonDecreaseTimeScale.setupState(makeHoverState(() => `Time Scale ${timeScale.toString().replace(".", " ")}`));
+      buttonDecreaseTimeScale.setupState(idleStateAttributes);
+
+      buttonIncreaseFlyingSpeed.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          if (flyingSpeed < 0.1) {
+            flyingSpeed = 0.1;
+          }
+          else if (flyingSpeed < 1) {
+            flyingSpeed = Math.ceil(flyingSpeed / 0.1) * 0.1;
+          } else if (flyingSpeed < 10) {
+            flyingSpeed = Math.ceil(flyingSpeed / 1) * 1;
+          } else {
+            flyingSpeed = Math.ceil(flyingSpeed / 5) * 5;
+          }
+
+          showStatus(`Flying Speed ${flyingSpeed.toString().replace(".", " ")}`);
+        }
+      } );
+      buttonIncreaseFlyingSpeed.setupState(makeHoverState(() => `Flying Speed ${flyingSpeed.toString().replace(".", " ")}`));
+      buttonIncreaseFlyingSpeed.setupState(idleStateAttributes);
+
+      buttonDecreaseFlyingSpeed.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          if (flyingSpeed <= 0.1) {
+            flyingSpeed = 0.1;
+          } else if (flyingSpeed <= 1) {
+            flyingSpeed = Math.floor(flyingSpeed / 0.1) * 0.1;
+          } else if (flyingSpeed <= 10) {
+            flyingSpeed = Math.floor(flyingSpeed / 1) * 1;
+          } else {
+            flyingSpeed = Math.floor(flyingSpeed / 5) * 5;
+          }
+
+          showStatus(`Flying Speed ${flyingSpeed.toString().replace(".", " ")}`);
+        }
+      } );
+      buttonDecreaseFlyingSpeed.setupState(makeHoverState(() => `Flying Speed ${flyingSpeed.toString().replace(".", " ")}`));
+      buttonDecreaseFlyingSpeed.setupState(idleStateAttributes);
+
+      buttonShowOrbits.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          orbitLines.forEach(line => { line.visible = !orbitLinesVisible; });
+          orbitLinesVisible = !orbitLinesVisible
+
+          showStatus(orbitLinesVisible ? 'Hide Orbits' : 'Show Orbits');
+        }
+      } );
+      buttonShowOrbits.setupState(makeHoverState(() => orbitLinesVisible ? 'Hide Orbits' : 'Show Orbits'));
+      buttonShowOrbits.setupState(idleStateAttributes);
+
+      buttonShowPlanetaryOutlines.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          Object.values(planetOutlines).forEach(outline => {outline.visible = !planetaryOutlinesVisible});
+          planetaryOutlinesVisible = !planetaryOutlinesVisible;
+
+          showStatus(planetaryOutlinesVisible ? 'Hide Outlines' : 'Show Outlines');
+        }
+      } );
+      buttonShowPlanetaryOutlines.setupState(makeHoverState(() => planetaryOutlinesVisible ? 'Hide Outlines' : 'Show Outlines'));
+      buttonShowPlanetaryOutlines.setupState(idleStateAttributes);
+
+      buttonIncreasePlanetaryOutlineScale.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          let value = Object.values(planetOutlines)[0].scale.x + 1;
+
+          if (value < 1) {
+            value = 1;
+          } else if (value < 10) {
+            value = Math.ceil(value / 1) * 1;
+          } else {
+            value = Math.ceil(value / 5) * 5;
+          }
+
+          Object.values(planetOutlines).forEach(outline => {outline.scale.set(value, value, value);});
+        
+          showStatus(`Outline Scale ${Object.values(planetOutlines)[0].scale.x.toString().replace(".", " ")}`);
+        }
+      } );
+      buttonIncreasePlanetaryOutlineScale.setupState(makeHoverState(() => `Outline Scale ${Object.values(planetOutlines)[0].scale.x.toString().replace(".", " ")}`));
+      buttonIncreasePlanetaryOutlineScale.setupState(idleStateAttributes);
+
+      buttonDecreasePlanetaryOutlineScale.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          let value = Object.values(planetOutlines)[0].scale.x - 1;
+
+          if (value <= 1) {
+            value = 1;
+          } else if (value <= 10) {
+            value = Math.floor(value / 1) * 1;
+          } else {
+            value = Math.floor(value / 5) * 5;
+          } 
+
+          Object.values(planetOutlines).forEach(outline => {outline.scale.set(value, value, value);});
+        
+          showStatus(`Outline Scale ${Object.values(planetOutlines)[0].scale.x.toString().replace(".", " ")}`);
+        }
+      } );
+      buttonDecreasePlanetaryOutlineScale.setupState(makeHoverState(() => `Outline Scale ${Object.values(planetOutlines)[0].scale.x.toString().replace(".", " ")}`));
+      buttonDecreasePlanetaryOutlineScale.setupState(idleStateAttributes);
+
+      buttonShowLunarEclipse.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          showLunarEclipse(!lunarEclipseVisible);
+          lunarEclipseVisible = !lunarEclipseVisible;
+       
+          showStatus(lunarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
+        }
+      } );
+      buttonShowLunarEclipse.setupState(makeHoverState(() => lunarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse'));
+      buttonShowLunarEclipse.setupState(idleStateAttributes);
+
+      buttonShowSolarEclipse.setupState( {
+        state: 'selected',
+        attributes: selectedAttributes,
+        onSet: () => {
+          showSolarEclipse(!solarEclipseVisible);
+          solarEclipseVisible = !solarEclipseVisible;
+        
+          showStatus(solarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse');
+        }
+      } );
+      buttonShowSolarEclipse.setupState(makeHoverState(() => solarEclipseVisible ? 'Deactivate Eclipse' : 'Activate Eclipse'));
+      buttonShowSolarEclipse.setupState(idleStateAttributes);
+
+      const hitboxIncreaseTimeScale = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxIncreaseTimeScale.userData = {type: "ui", ui: buttonIncreaseTimeScale};
+      buttonIncreaseTimeScale.add(hitboxIncreaseTimeScale);
+
+      const hitboxDecreaseTimeScale = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxDecreaseTimeScale.userData = {type: "ui", ui: buttonDecreaseTimeScale};
+      buttonDecreaseTimeScale.add(hitboxDecreaseTimeScale);
+
+      const hitboxIncreaseFlyingSpeed = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxIncreaseFlyingSpeed.userData = {type: "ui", ui: buttonIncreaseFlyingSpeed};
+      buttonIncreaseFlyingSpeed.add(hitboxIncreaseFlyingSpeed);
+
+      const hitboxDecreaseFlyingSpeed = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxDecreaseFlyingSpeed.userData = {type: "ui", ui: buttonDecreaseFlyingSpeed};
+      buttonDecreaseFlyingSpeed.add(hitboxDecreaseFlyingSpeed);
+
+      const hitboxShowOrbits = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxShowOrbits.userData = {type: "ui", ui: buttonShowOrbits};
+      buttonShowOrbits.add(hitboxShowOrbits);
+
+      const hitboxShowPlanetaryOutlines = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxShowPlanetaryOutlines.userData = {type: "ui", ui: buttonShowPlanetaryOutlines};
+      buttonShowPlanetaryOutlines.add(hitboxShowPlanetaryOutlines);
+
+      const hitboxIncreasePlanetaryOutlineScale = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxIncreasePlanetaryOutlineScale.userData = {type: "ui", ui: buttonIncreasePlanetaryOutlineScale};
+      buttonIncreasePlanetaryOutlineScale.add(hitboxIncreasePlanetaryOutlineScale);
+
+      const hitboxDecreasePlanetaryOutlineScale = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxDecreasePlanetaryOutlineScale.userData = {type: "ui", ui: buttonDecreasePlanetaryOutlineScale};
+      buttonDecreasePlanetaryOutlineScale.add(hitboxDecreasePlanetaryOutlineScale);
+
+      const hitboxShowLunarEclipse = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxShowLunarEclipse.userData = {type: "ui", ui: buttonShowLunarEclipse};
+      buttonShowLunarEclipse.add(hitboxShowLunarEclipse);
+
+      const hitboxShowSolarEclipse = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.02), new THREE.MeshBasicMaterial({visible: false}));
+      hitboxShowSolarEclipse.userData = {type: "ui", ui: buttonShowSolarEclipse};
+      buttonShowSolarEclipse.add(hitboxShowSolarEclipse);
   
-      const hitboxNext = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.02), new THREE.MeshBasicMaterial({visible: false}));
-      hitboxNext.userData = {type: "ui", ui: buttonNext};
-      buttonNext.add(hitboxNext);
-  
-      const hitboxPrevious = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.02), new THREE.MeshBasicMaterial({visible: false}));
-      hitboxPrevious.userData = {type: "ui", ui: buttonPrevious};
-      buttonPrevious.add(hitboxPrevious);
-  
-      raycastTargets.push(hitboxNext, hitboxPrevious)
-      container.add(buttonNext, buttonPrevious);
-      scene.add(container);
+
+      raycastTargets.push(hitboxIncreaseTimeScale, hitboxDecreaseTimeScale, hitboxIncreaseFlyingSpeed, hitboxDecreaseFlyingSpeed, hitboxShowOrbits, hitboxShowPlanetaryOutlines, hitboxIncreasePlanetaryOutlineScale, hitboxDecreasePlanetaryOutlineScale, hitboxShowLunarEclipse, hitboxShowSolarEclipse);
+      
+      const row1 = createRow();
+      row1.add(buttonIncreaseTimeScale, buttonDecreaseTimeScale);
+      const row2 = createRow();
+      row2.add(buttonIncreaseFlyingSpeed, buttonDecreaseFlyingSpeed);
+      const row3 = createRow();
+      row3.add(buttonShowOrbits, buttonShowPlanetaryOutlines);
+      const row4 = createRow();
+      row4.add(buttonIncreasePlanetaryOutlineScale, buttonDecreasePlanetaryOutlineScale);
+      const row5 = createRow();
+      row5.add( buttonShowLunarEclipse, buttonShowSolarEclipse);
+
+      container.add(row1, row2, row3, row4, row5);
+      
+      controller1.add(container);
+      container.position.copy(new THREE.Vector3(-0.05, 0.125, -0.0125));
+      container.rotation.set(0, 1.5, 0);
+
       uiVisible = true;
     } else {
       container.visible = true;
@@ -339,10 +617,6 @@ async function main() {
     mesh.add(outline);
   }
 
-  // default values
-  let timeScale = 10000; // 10000 times faster than real life
-  let flyingSpeed = 10;
-
   // gui
   const gui = new GUI();
   const params = {
@@ -379,6 +653,14 @@ async function main() {
 
   // listeners for Solar/Lunar eclipses
   lunarCtrl.onChange((value) => {
+    showLunarEclipse(value);
+  });
+
+  solarCtrl.onChange((value) => {
+    showSolarEclipse(value);
+  });
+
+  function showLunarEclipse(value) {
     if (value) {
       params.showSolarEclipse = false;
 
@@ -414,9 +696,9 @@ async function main() {
       planetOutlines.earth.material.color.set(0xffffff); // back to white
       planetOutlines.moon.material.color.set(0xffffff);
     }
-  });
+  }
 
-  solarCtrl.onChange((value) => {
+  function showSolarEclipse(value) {
     if (value) {
       params.showLunarEclipse = false;
 
@@ -452,7 +734,7 @@ async function main() {
       planetOutlines.earth.material.color.set(0xffffff); // back to white
       planetOutlines.moon.material.color.set(0xffffff);
     }
-  });
+  }
 
   function hideGUI() {
     gui.hide()
@@ -500,11 +782,11 @@ async function main() {
     const gamepad = controller1.userData.gamepad;
     if (!gamepad) return;
 
-    if (gamepad.buttons[4]?.pressed && !controller1.userData.optionPressed) { // option button
+    if (gamepad.buttons[3]?.pressed && !controller1.userData.optionPressed) { // option button
       controller1.userData.optionPressed = true;
       if (uiVisible) hideThreeMeshUI();
       else showThreeMeshUI();
-    } else if (!gamepad.buttons[4]?.pressed) {
+    } else if (!gamepad.buttons[3]?.pressed) {
       controller1.userData.optionPressed = false;
     }
   }
@@ -602,12 +884,6 @@ async function main() {
     simulationTime += delta * timeScale;
     movementControls.update(controls, delta, flyingSpeed);
     ThreeMeshUI.update();
-
-    // ThreeMeshUI hovering over left controller
-    if (container && controller1 && uiVisible) {
-      container.position.copy(controller1.position).add(uiOffset.clone().applyQuaternion(controller1.quaternion));
-      container.quaternion.copy(controller1.quaternion);
-    }
 
     // xr input
     updateXRInput();
