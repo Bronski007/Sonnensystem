@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { worldState } from '../main.js';
 
 
 /*
@@ -35,7 +36,7 @@ export function createMovementControls() {
     }
   });
 
-  function update(controls, delta, speed = 10) {
+  function update(controls, delta, speed = worldState.flyingSpeed) {
     velocity.set(0, 0, 0);
     if (move.forward) velocity.z += speed * delta;
     if (move.backward) velocity.z -= speed * delta;

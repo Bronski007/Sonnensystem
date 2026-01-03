@@ -40,6 +40,8 @@ export async function planetBuilder(sizeMultplier){
     const sunMaterial = new THREE.MeshBasicMaterial({map: textureSun}); // use MeshBasicMaterial for sun to avoid lighting issues
     const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
     sunMesh.userData.type = "planet";
+    sunMesh.userData.name = "SUN";
+    sunMesh.userData.info = "The Sun is a Star with an average surface temperature of 5505 C and a diameter of 1392700 km";
 
     // mercury
     const textureMercury = textureLoader.load('mercury.jpg');
@@ -47,6 +49,8 @@ export async function planetBuilder(sizeMultplier){
     const mercury = new Planet(mercuryRadius * sizeMultplier, textureMercury);
     const mercuryMesh = createPlanet(mercury);
     mercuryMesh.userData.type = "planet";
+    mercuryMesh.userData.name = "MERCURY";
+    mercuryMesh.userData.info = "Mercury is a Terrestrial Planet and the 1st planet from the Sun with an average surface temperature of 167 C and a diameter of 4880 km";
 
     // venus
     const textureVenus = textureLoader.load('venus.jpg');
@@ -54,6 +58,8 @@ export async function planetBuilder(sizeMultplier){
     const venus = new Planet(venusRadius * sizeMultplier, textureVenus);
     const venusMesh = createPlanet(venus);
     venusMesh.userData.type = "planet";
+    venusMesh.userData.name = "VENUS";
+    venusMesh.userData.info = "Venus is a Terrestrial Planet and the 2nd planet from the Sun with an average surface temperature of 464 C and a diameter of 12104 km";
 
     // earth
     const textureEarth = textureLoader.load('earth_day.jpg');
@@ -62,6 +68,8 @@ export async function planetBuilder(sizeMultplier){
     const earth = new Planet(earthRadius * sizeMultplier, textureEarth, null, textureEarthClouds);
     const earthMesh = createPlanet(earth);
     earthMesh.userData.type = "planet";
+    earthMesh.userData.name = "EARTH";
+    earthMesh.userData.info = "Earth is a Terrestrial Planet and the 3rd planet from the Sun with an average surface temperature of 15 C and a diameter of 12742 km and 1 moon";
 
     // moon
     const textureMoon = textureLoader.load('moon.jpg');
@@ -69,6 +77,8 @@ export async function planetBuilder(sizeMultplier){
     const moon = new Planet(moonRadius * sizeMultplier, textureMoon);
     const moonMesh = createPlanet(moon);
     moonMesh.userData.type = "planet";
+    moonMesh.userData.name = "MOON";
+    moonMesh.userData.info = "The Moon is a Natural Satellite orbiting Earth with an average surface temperature of minus 20 C and a diameter of 3474 km";
     
     // mars
     const textureMars = textureLoader.load('mars.jpg');
@@ -76,6 +86,8 @@ export async function planetBuilder(sizeMultplier){
     const mars = new Planet(marsRadius * sizeMultplier, textureMars);
     const marsMesh = createPlanet(mars);
     marsMesh.userData.type = "planet";
+    marsMesh.userData.name = "MARS";
+    marsMesh.userData.info = "Mars is a Terrestrial Planet and the 4th planet from the Sun with an average surface temperature of minus 63 C and a diameter of 6779 km and 2 moons";
 
     // jupiter
     const textureJupiter = textureLoader.load('jupiter.jpg');
@@ -85,6 +97,8 @@ export async function planetBuilder(sizeMultplier){
     const jupiter = new Planet(jupiterRadius * sizeMultplier, textureJupiter, jupiterRing);
     const jupiterMesh = createPlanet(jupiter);
     jupiterMesh.userData.type = "planet";
+    jupiterMesh.userData.name = "JUPITER";
+    jupiterMesh.userData.info = "Jupiter is a Gas Giant and the 5th planet from the Sun with an average surface temperature of minus 108 C and a diameter of 139820 km and 4 rings and 95 moons";
 
     // saturn
     const textureSaturn = textureLoader.load('saturn.jpg');
@@ -94,6 +108,8 @@ export async function planetBuilder(sizeMultplier){
     const saturn = new Planet(saturnRadius * sizeMultplier, textureSaturn, saturnRing);
     const saturnMesh = createPlanet(saturn);
     saturnMesh.userData.type = "planet";
+    saturnMesh.userData.name = "SATURN";
+    saturnMesh.userData.info = "Saturn is a Gas Giant and the 6th planet from the Sun with an average surface temperature of minus 139 C and a diameter of 116460 km and 7 rings and 83 moons";
 
     // uranus
     const textureUranus = textureLoader.load('uranus.jpg');
@@ -103,6 +119,8 @@ export async function planetBuilder(sizeMultplier){
     const uranus = new Planet(uranusRadius * sizeMultplier, textureUranus, uranusRing);
     const uranusMesh = createPlanet(uranus);
     uranusMesh.userData.type = "planet";
+    uranusMesh.userData.name = "URANUS";
+    uranusMesh.userData.info = "Uranus is an Ice Giant and the 7th planet from the Sun with an average surface temperature of minus 197 C and a diameter of 50724 km and 13 rings and 27 moons";
 
     // neptune
     const textureNeptune = textureLoader.load('neptune.jpg');
@@ -112,6 +130,8 @@ export async function planetBuilder(sizeMultplier){
     const neptune = new Planet(neptuneRadius * sizeMultplier, textureNeptune, neptuneRing);
     const neptuneMesh = createPlanet(neptune);
     neptuneMesh.userData.type = "planet";
+    neptuneMesh.userData.name = "NEPTUNE";
+    neptuneMesh.userData.info = "Neptune is an Ice Giant and the 8th planet from the Sun with an average surface temperature of minus 201 C and a diameter of 49244 km and 5 rings and 14 moons";
 
     // pluto
     const texturePluto = textureLoader.load('pluto.jpg');
@@ -119,6 +139,8 @@ export async function planetBuilder(sizeMultplier){
     const pluto = new Planet(plutoRadius * sizeMultplier, texturePluto);
     const plutoMesh = createPlanet(pluto);
     plutoMesh.userData.type = "planet";
+    plutoMesh.userData.name = "PLUTO";
+    plutoMesh.userData.info = "Pluto is a Dwarf Planet and the 9th planet from the Sun with an average surface temperature of minus 229 C and a diameter of 2377 km and 5 moons";
 
     return {
         meshes: {
