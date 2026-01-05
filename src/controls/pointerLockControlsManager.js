@@ -1,4 +1,4 @@
-import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js?module';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
 
 /*

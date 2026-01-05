@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
 import { fetchPlanetData } from '../API/planetAPI.js';
 
 
@@ -10,7 +10,7 @@ function createOrbit(mesh, distance, eccentricity){
     const focalDistance = Math.sqrt(semiMajorAxis * semiMajorAxis - semiMinorAxis * semiMinorAxis); // focal distance is the distance from the center of the ellipse to the focus (where the sun is located)
     
     const curve = new THREE.EllipseCurve(-focalDistance, 0, semiMajorAxis, semiMinorAxis, 0, 2 * Math.PI, false, 0); // create an ellipse curve with its center shifted by -focalDistance on the x-axis, this ensures the Sun is positioned at the origin (0, 0) at the focus
-    const points = curve.getPoints(200);
+    const points = curve.getPoints(1024);
     const geometry = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, 0, p.y))); // convert points to 3D vectors for Three.js geometry
     const material = new THREE.LineBasicMaterial({ color: 0xffffff });
     const ellipse = new THREE.Line(geometry, material);

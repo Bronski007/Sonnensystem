@@ -1,0 +1,12 @@
+html, body {
+    margin: 0;
+    height: 100%;
+}
+
+#ARButton {
+    left: 20px !important;
+}
+
+#VRButton {
+    left: 140px !important;
+}

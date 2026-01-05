@@ -1,4 +1,5 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
+import { worldState } from '../main.js';
 
 
 /*
@@ -35,7 +36,7 @@ export function createMovementControls() {
     }
   });
 
-  function update(controls, delta, speed = 10) {
+  function update(controls, delta, speed = worldState.flyingSpeed) {
     velocity.set(0, 0, 0);
     if (move.forward) velocity.z += speed * delta;
     if (move.backward) velocity.z -= speed * delta;
@@ -45,8 +46,8 @@ export function createMovementControls() {
     controls.moveRight(velocity.x);
     controls.moveForward(velocity.z);
 
-    if (move.up) controls.getObject().position.y += speed * delta;
-    if (move.down) controls.getObject().position.y -= speed * delta;
+    if (move.up) controls.object.position.y += speed * delta;
+    if (move.down) controls.object.position.y -= speed * delta;
   }
 
   return { update };

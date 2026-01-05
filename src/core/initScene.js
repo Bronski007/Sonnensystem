@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as THREE from "three";
 
 /*
 initial scene set-up
@@ -16,6 +16,8 @@ export function initScene() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap; // softer shadows
+  renderer.xr.enabled = true;
+  renderer.xr.setFramebufferScaleFactor(1.5);
   document.body.appendChild(renderer.domElement);
 
   return { scene, camera, renderer };
